@@ -1,0 +1,40 @@
+name: Dreamcoinshop
+version: '1.0.0'
+main: org.mydreamduels.dreamcoinshop.Dreamcoinshop
+api-version: '1.21'
+author: YourName
+softdepend: [PlaceholderAPI]
+
+commands:
+  coin:
+    description: Manage the custom Coins currency.
+    usage: /coin <balance|give|giveall|remove|set|help>
+  coinshop:
+    description: Opens the Coinshop dialog menu. /coinshop reload reloads all configs.
+    usage: /coinshop [reload]
+    aliases: [cs]
+  orb:
+    description: Manage the custom Orbs currency.
+    usage: /orb <balance|give|giveall|remove|set|help>
+  orbshop:
+    description: Opens the Orbshop dialog menu (spend Orbs on spawners).
+    usage: /orbshop
+
+permissions:
+  dreamcoinshop.admin:
+    description: Allows giving/removing/setting other players' coins/orbs, and /coinshop reload.
+    default: op
+  # Perk permissions - point these at whatever plugin already provides the actual
+  # command (e.g. EssentialsX) by editing the `permission:` field for each perk
+  # in config.yml. /smithingtable, /craft, /trash, /anvil, /enderchest, /hat,
+  # /crawl, /spin, /layback were removed from the shop on request.
+  dreamcoinshop.perk.workbench:
+    default: false
+  dreamcoinshop.perk.repair:
+    default: false
+  dreamcoinshop.perk.heal:
+    default: false
+  dreamcoinshop.perk.feed:
+    default: false
+  dreamcoinshop.perk.kit:
+    default: false

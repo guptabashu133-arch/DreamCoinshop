@@ -1,0 +1,38 @@
+# ================================================
+#   Dreamcoinshop - sounds.yml
+#   Sound played for every action in the plugin. Set settings.sounds-enabled
+#   to false in config.yml to mute all of these without editing this file.
+#
+#   sound  = any org.bukkit.Sound enum name (e.g. UI_BUTTON_CLICK)
+#   volume = 0.0 - 1.0+ (1.0 is normal volume)
+#   pitch  = 0.5 - 2.0 (1.0 is normal pitch)
+#
+#   Set a sound's value to "" (empty) to disable just that one sound.
+#
+#   NOTE: Minecraft's own client already plays a click sound for every dialog
+#   button press, so there are deliberately NO sounds here for plain menu
+#   navigation (opening a menu, clicking Back) - adding one would just double
+#   up with that native click and sound like two clicks at once. Only actions
+#   the client doesn't already give feedback for (buying, equipping, selling,
+#   etc) have a sound below.
+# ================================================
+
+sounds:
+  # Buying a cosmetic / perk / wand for the first time
+  purchase-success:  { sound: "ENTITY_PLAYER_LEVELUP",        volume: 0.7, pitch: 1.4 }
+  purchase-fail:      { sound: "ENTITY_VILLAGER_NO",           volume: 1.0, pitch: 1.0 }
+
+  # Clicking an already-owned cosmetic to turn it on/off
+  equip:              { sound: "ITEM_ARMOR_EQUIP_GENERIC",     volume: 1.0, pitch: 1.2 }
+  unequip:            { sound: "BLOCK_LEVER_CLICK",            volume: 1.0, pitch: 0.8 }
+
+  # Sellwand / spawner sellwand
+  sellwand-sell:      { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.0 }
+  sellwand-empty:     { sound: "ENTITY_VILLAGER_NO",           volume: 1.0, pitch: 1.0 }
+  sellwand-break:     { sound: "ENTITY_ITEM_BREAK",            volume: 1.0, pitch: 1.0 }
+
+  # Buy Coins dialog - clicking "Visit Store"
+  buycoins-select:    { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.2 }
+
+  # Orbs - the automatic Orbs-over-time payout
+  orb-received:       { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.6, pitch: 1.6 }
