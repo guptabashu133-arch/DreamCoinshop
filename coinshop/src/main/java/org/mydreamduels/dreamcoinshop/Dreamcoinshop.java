@@ -24,6 +24,7 @@ import org.mydreamduels.dreamcoinshop.commands.CoinCommand;
 import org.mydreamduels.dreamcoinshop.commands.CoinShopCommand;
 import org.mydreamduels.dreamcoinshop.commands.OrbCommand;
 import org.mydreamduels.dreamcoinshop.commands.OrbShopCommand;
+import org.mydreamduels.dreamcoinshop.commands.OrbWandCommand;
 import org.mydreamduels.dreamcoinshop.config.MessagesConfig;
 import org.mydreamduels.dreamcoinshop.config.SoundConfig;
 import org.mydreamduels.dreamcoinshop.data.PlayerDataManager;
@@ -32,8 +33,10 @@ import org.mydreamduels.dreamcoinshop.economy.CoinsManager;
 import org.mydreamduels.dreamcoinshop.economy.OrbsManager;
 import org.mydreamduels.dreamcoinshop.gui.CoinShopGUI;
 import org.mydreamduels.dreamcoinshop.listeners.ChatFormatListener;
+import org.mydreamduels.dreamcoinshop.listeners.OrbWandListener;
 import org.mydreamduels.dreamcoinshop.listeners.PlayerJoinListener;
 import org.mydreamduels.dreamcoinshop.listeners.SellwandListener;
+import org.mydreamduels.dreamcoinshop.orbzone.OrbZoneManager;
 import org.mydreamduels.dreamcoinshop.placeholder.DreamcoinshopExpansion;
 import org.mydreamduels.dreamcoinshop.shopdata.ShopConfig;
 import org.mydreamduels.dreamcoinshop.shopdata.ShopOptions;
@@ -43,6 +46,7 @@ public final class Dreamcoinshop extends JavaPlugin {
     private ShopConfig shopConfig;
     private CoinsManager coinsManager;
     private OrbsManager orbsManager;
+    private OrbZoneManager orbZoneManager;
     private PlayerDataManager playerDataManager;
     private CoinShopGUI coinShopGUI;
     private MessagesConfig messages;
@@ -59,6 +63,7 @@ public final class Dreamcoinshop extends JavaPlugin {
         this.getServer().getPluginManager().registerEvents((Listener) new PlayerJoinListener(this), (Plugin) this);
         this.getServer().getPluginManager().registerEvents((Listener) new ChatFormatListener(this), (Plugin) this);
         this.getServer().getPluginManager().registerEvents((Listener) new SellwandListener(this), (Plugin) this);
+        this.getServer().getPluginManager().registerEvents((Listener) new OrbWandListener(this), (Plugin) this);
         CoinCommand coinCommand = new CoinCommand(this);
         this.getCommand("coin").setExecutor((CommandExecutor) coinCommand);
         this.getCommand("coin").setTabCompleter((TabCompleter) coinCommand);
@@ -67,6 +72,9 @@ public final class Dreamcoinshop extends JavaPlugin {
         this.getCommand("orb").setExecutor((CommandExecutor) orbCommand);
         this.getCommand("orb").setTabCompleter((TabCompleter) orbCommand);
         this.getCommand("orbshop").setExecutor((CommandExecutor) new OrbShopCommand(this));
+        OrbWandCommand orbWandCommand = new OrbWandCommand(this);
+        this.getCommand("orbwand").setExecutor((CommandExecutor) orbWandCommand);
+        this.getCommand("orbwand").setTabCompleter((TabCompleter) orbWandCommand);
         this.getServer().getScheduler().runTaskTimer((Plugin) this, this::tickRainbowGlow, 20L, 20L);
         this.glowSafetyTask = this.getServer().getScheduler().runTaskTimer((Plugin) this, this::reapplyGlowForOnlinePlayers, 100L, 100L);
         this.startOrbTimer();
@@ -85,6 +93,9 @@ public final class Dreamcoinshop extends JavaPlugin {
         // normal restart would drop everything since the last timer tick. shutdown() cancels
         // the async task and then writes synchronously, so the file is complete before the
         // server finishes stopping.
+        if (this.orbZoneManager != null) {
+            this.orbZoneManager.shutdown();
+        }
         if (this.coinsManager != null) {
             this.coinsManager.shutdown();
         }
@@ -114,6 +125,10 @@ public final class Dreamcoinshop extends JavaPlugin {
         long saveInterval = this.shopConfig.getBalanceSaveIntervalSeconds();
         this.coinsManager.startAutoSave(saveInterval);
         this.orbsManager.startAutoSave(saveInterval);
+        if (this.orbZoneManager == null) {
+            this.orbZoneManager = new OrbZoneManager(this);
+        }
+        this.orbZoneManager.reloadSettings();
         this.coinShopGUI = new CoinShopGUI(this);
     }
 
@@ -129,6 +144,11 @@ public final class Dreamcoinshop extends JavaPlugin {
     private void startOrbTimer() {
         if (this.orbTask != null) {
             this.orbTask.cancel();
+            this.orbTask = null;
+        }
+        // interval-minutes: 0 turns the everyone-online payout off (e.g. to only use orb zones).
+        if (this.shopConfig.getOrbIntervalMinutes() <= 0) {
+            return;
         }
         long intervalTicks = (long) Math.max(1, this.shopConfig.getOrbIntervalMinutes()) * 60L * 20L;
         this.orbTask = this.getServer().getScheduler().runTaskTimer((Plugin) this, this::giveOrbsToOnlinePlayers, intervalTicks, intervalTicks);
@@ -276,6 +296,10 @@ public final class Dreamcoinshop extends JavaPlugin {
 
     public OrbsManager getOrbsManager() {
         return this.orbsManager;
+    }
+
+    public OrbZoneManager getOrbZoneManager() {
+        return this.orbZoneManager;
     }
 
     public PlayerDataManager getPlayerDataManager() {

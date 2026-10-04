@@ -188,6 +188,25 @@ orbs:
   amount-per-interval: 1
   gui-title: "<light_purple><bold>Orbshop"
 
+# ---------------- Orb Zones (/orbwand) ----------------
+# /orbwand gives a golden axe: left click a block = position 1, right click = position 2,
+# then /orbwand create <name>. Players standing inside a zone get `amount` Orbs every
+# `interval-seconds`, with a countdown in their action bar. Leaving the zone stops it
+# immediately and resets the countdown. /orbwand list, /orbwand delete <name>.
+# (Set orbs.interval-minutes above to 0 to turn off the everyone-online payout.)
+orbzones:
+  enabled: true
+  interval-seconds: 60
+  amount: 1
+  # Item textures shown in the action bar, cycled every icon-change-seconds.
+  # Java 1.21.9+ only - Bedrock players just see the text.
+  icon-change-seconds: 3
+  actionbar-icons:
+    - EXPERIENCE_BOTTLE
+    - ENDER_PEARL
+    - AMETHYST_SHARD
+    - NETHER_STAR
+
 # ---------------- Storage ----------------
 # How often coins.yml and orbs.yml are written to disk, in seconds.
 #

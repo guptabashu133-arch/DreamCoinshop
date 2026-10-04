@@ -36,3 +36,6 @@ sounds:
 
   # Orbs - the automatic Orbs-over-time payout
   orb-received:       { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.6, pitch: 1.6 }
+
+  # Earning orbs inside an /orbwand zone
+  orbzone-received:   { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.8, pitch: 1.6 }

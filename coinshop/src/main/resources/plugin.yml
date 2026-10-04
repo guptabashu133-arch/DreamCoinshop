@@ -19,6 +19,9 @@ commands:
   orbshop:
     description: Opens the Orbshop dialog menu (spend Orbs on spawners).
     usage: /orbshop
+  orbwand:
+    description: Orb zone wand - select an area where players earn Orbs while standing in it.
+    usage: /orbwand [create <name>|delete <name>|list]
 
 permissions:
   dreamcoinshop.admin:
