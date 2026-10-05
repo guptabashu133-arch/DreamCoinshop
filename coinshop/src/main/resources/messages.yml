@@ -79,7 +79,7 @@ orbs:
 # /orbwand + orb zone action bar
 orbzone:
   # <icon> = cycling item texture, <amount>, <time> = m:ss left
-  actionbar: "<icon> <light_purple><bold><amount> orb</bold></light_purple> <gray>in</gray> <white><time></white>"
+  actionbar: "<icon> <gradient:#C084FC:#F0ABFC><bold>+<amount> Orb</bold></gradient> <dark_gray>»</dark_gray> <white><time></white>"
   wand-given: "<shadow:black><green>Orb Wand given. <gray>Left click = pos 1, right click = pos 2, then <yellow>/orbwand create <name></yellow></gray></green></shadow>"
   pos1: "<shadow:black><light_purple>Position 1</light_purple> <gray>set to <white><pos></white></gray></shadow>"
   pos2: "<shadow:black><light_purple>Position 2</light_purple> <gray>set to <white><pos></white></gray></shadow>"

@@ -134,7 +134,7 @@ public class OrbZoneManager {
     private void sendActionBar(Player player, int secondsLeft) {
         IconSupport.setViewer(player);
         Material iconMat = this.icons.get((int) ((this.ticks / this.iconChangeSeconds) % this.icons.size()));
-        Component icon = IconSupport.icon(iconMat);
+        Component icon = IconSupport.isBedrock(player) ? IconSupport.bedrockSmallGlyph(iconMat) : IconSupport.icon(iconMat);
         String time = (secondsLeft / 60) + ":" + String.format(Locale.ROOT, "%02d", secondsLeft % 60);
         String amountText = this.amount == Math.floor(this.amount) ? String.valueOf((long) this.amount) : String.valueOf(this.amount);
         MessagesConfig msg = this.plugin.getMessages();

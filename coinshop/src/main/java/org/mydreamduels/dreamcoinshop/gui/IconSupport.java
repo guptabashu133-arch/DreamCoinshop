@@ -97,7 +97,7 @@ public final class IconSupport {
      *  plain text (no icon) when this returns null. */
     public static Component icon(Material material) {
         if (!isEnabled() || material == null) return null;
-        if (VIEWER_IS_BEDROCK.get()) return null; // Bedrock/PE: text-only buttons
+        if (VIEWER_IS_BEDROCK.get()) return bedrockGlyph(material); // TaraashMC-Pack item glyph (null = text only)
         try {
             String textureName = ICON_ALIASES.getOrDefault(material, material.name().toLowerCase(Locale.ROOT));
             boolean isBlock = material.isBlock();
@@ -109,6 +109,45 @@ public final class IconSupport {
             return null;
         }
     }
+
+    private static Map<String, String> itemGlyphs;
+
+    /** Full-size item glyph from the TaraashMC-Pack item pages (EC-F2); null if the pack has none. */
+    public static Component bedrockGlyph(Material material) {
+        if (material == null) return null;
+        if (itemGlyphs == null) {
+            Map<String, String> map = new java.util.HashMap<>();
+            try (java.io.InputStream in = IconSupport.class.getClassLoader().getResourceAsStream("item-glyphs.properties")) {
+                java.util.Properties p = new java.util.Properties();
+                if (in != null) p.load(in);
+                for (String k : p.stringPropertyNames()) {
+                    map.put(k, new String(Character.toChars(Integer.parseInt(p.getProperty(k).trim(), 16))));
+                }
+            } catch (Exception ignored) {
+            }
+            itemGlyphs = map;
+        }
+        String g = itemGlyphs.get(material.name());
+        return g == null ? null : Component.text(g, net.kyori.adventure.text.format.NamedTextColor.WHITE);
+    }
+
+    /**
+     * Small (action-bar size) Bedrock icon from the TaraashMC-Pack shared page EB (U+EB80..).
+     * Bedrock can't draw sprites, but it draws these font glyphs; white so the text colour
+     * doesn't tint them. null when the pack has no small icon for that item.
+     */
+    public static Component bedrockSmallGlyph(Material material) {
+        Integer cp = material == null ? null : BEDROCK_SMALL.get(material);
+        return cp == null ? null : Component.text(new String(Character.toChars(cp)), net.kyori.adventure.text.format.NamedTextColor.WHITE);
+    }
+
+    private static final Map<Material, Integer> BEDROCK_SMALL = Map.ofEntries(
+            Map.entry(Material.GOLD_NUGGET, 0xEB80), Map.entry(Material.GOLD_INGOT, 0xEB81),
+            Map.entry(Material.EXPERIENCE_BOTTLE, 0xEB82), Map.entry(Material.ENDER_PEARL, 0xEB83),
+            Map.entry(Material.AMETHYST_SHARD, 0xEB84), Map.entry(Material.NETHER_STAR, 0xEB85),
+            Map.entry(Material.GOLDEN_HELMET, 0xEB86), Map.entry(Material.CLOCK, 0xEB8C),
+            Map.entry(Material.DIAMOND, 0xEBA4), Map.entry(Material.EMERALD, 0xEBA5),
+            Map.entry(Material.ENDER_EYE, 0xEBB5), Map.entry(Material.TOTEM_OF_UNDYING, 0xEB9B));
 
     /** Builds "[icon] label" - prepends the icon (with a trailing space) before the given label
      *  Component, or just returns the label unchanged if icons aren't supported right now. */
