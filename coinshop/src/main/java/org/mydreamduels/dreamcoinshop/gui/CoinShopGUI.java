@@ -86,6 +86,16 @@ public class CoinShopGUI {
             "enderchest", Material.ENDER_EYE, "nick", Material.NAME_TAG
     );
 
+    /** Button action -> its click code, so a Bedrock player can get the same menu as a native form. */
+    private final java.util.Map<DialogAction, io.papermc.paper.registry.data.dialog.action.DialogActionCallback> callbacks =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    private DialogAction track(io.papermc.paper.registry.data.dialog.action.DialogActionCallback callback, ClickCallback.Options options) {
+        DialogAction action = DialogAction.customClick(callback, options);
+        this.callbacks.put(action, callback);
+        return action;
+    }
+
     public CoinShopGUI(Dreamcoinshop plugin) {
         this.plugin = plugin;
     }
@@ -110,7 +120,9 @@ public class CoinShopGUI {
                         .body(List.of(DialogBody.plainMessage(Component.text("Your balance: ", NamedTextColor.GRAY).append(Component.text((long) balance + " coins", NamedTextColor.GOLD)))))
                         .build())
                 .type(DialogType.multiAction(buttons).build()));
-        player.showDialog((DialogLike) dialog);
+        if (!BedrockMenus.send(this.plugin, player, buttons, this.callbacks)) {
+            player.showDialog((DialogLike) dialog);
+        }
     }
 
     /**
@@ -152,7 +164,7 @@ public class CoinShopGUI {
         return ActionButton.builder(IconSupport.withIcon(icon, Component.text(name, NamedTextColor.YELLOW)))
                 .tooltip(Component.text(description, NamedTextColor.GRAY))
                 .width(200)
-                .action(DialogAction.customClick((view, audience) -> {
+                .action(this.track((view, audience) -> {
                     if (audience instanceof Player p) {
                         CoinShopGUI.this.openLater(p, openAction);
                     }
@@ -236,7 +248,7 @@ public class CoinShopGUI {
             ActionButton button = ActionButton.builder(label)
                     .tooltip(owned ? msg.get("shop.already-unlocked", new TagResolver[0]) : Component.text("Click to purchase", NamedTextColor.YELLOW))
                     .width(220)
-                    .action(DialogAction.customClick((view, audience) -> {
+                    .action(this.track((view, audience) -> {
                         if (!(audience instanceof Player p)) {
                             return;
                         }
@@ -276,7 +288,7 @@ public class CoinShopGUI {
             ActionButton button = ActionButton.builder(label)
                     .tooltip(Component.text("Click to purchase", NamedTextColor.YELLOW))
                     .width(220)
-                    .action(DialogAction.customClick((view, audience) -> {
+                    .action(this.track((view, audience) -> {
                         if (!(audience instanceof Player p)) {
                             return;
                         }
@@ -350,7 +362,7 @@ public class CoinShopGUI {
         return ActionButton.builder(label)
                 .tooltip(Component.text(tooltipText, NamedTextColor.GRAY))
                 .width(240)
-                .action(DialogAction.customClick((view, audience) -> {
+                .action(this.track((view, audience) -> {
                     if (!(audience instanceof Player p)) {
                         return;
                     }
@@ -379,7 +391,7 @@ public class CoinShopGUI {
         ActionButton visitStore = ActionButton.builder(IconSupport.withIcon(Material.GOLD_INGOT, Component.text("Visit Store 🪙", NamedTextColor.GREEN)))
                 .tooltip(Component.text("Get a clickable store link in chat", NamedTextColor.GRAY))
                 .width(200)
-                .action(DialogAction.customClick((view, audience) -> {
+                .action(this.track((view, audience) -> {
                     if (!(audience instanceof Player p)) {
                         return;
                     }
@@ -400,7 +412,9 @@ public class CoinShopGUI {
                         .body(body.stream().map(DialogBody::plainMessage).toList())
                         .build())
                 .type(DialogType.multiAction(buttons).build()));
-        player.showDialog((DialogLike) dialog);
+        if (!BedrockMenus.send(this.plugin, player, buttons, this.callbacks)) {
+            player.showDialog((DialogLike) dialog);
+        }
     }
 
     public void openTopCoins(Player player) {
@@ -443,7 +457,9 @@ public class CoinShopGUI {
                         .body(body.stream().map(DialogBody::plainMessage).toList())
                         .build())
                 .type(DialogType.multiAction(buttons).build()));
-        player.showDialog((DialogLike) dialog);
+        if (!BedrockMenus.send(this.plugin, player, buttons, this.callbacks)) {
+            player.showDialog((DialogLike) dialog);
+        }
     }
 
     public void openOrbShop(Player player) {
@@ -459,7 +475,7 @@ public class CoinShopGUI {
             ActionButton button = ActionButton.builder(label)
                     .tooltip(Component.text("Click to purchase", NamedTextColor.YELLOW))
                     .width(200)
-                    .action(DialogAction.customClick((view, audience) -> {
+                    .action(this.track((view, audience) -> {
                         if (!(audience instanceof Player p)) {
                             return;
                         }
@@ -504,14 +520,16 @@ public class CoinShopGUI {
                         .body(List.of(DialogBody.plainMessage(Component.text("Your Orbs: ", NamedTextColor.GRAY).append(Component.text((long) balance + " orbs", NamedTextColor.LIGHT_PURPLE)))))
                         .build())
                 .type(DialogType.multiAction(buttons).build()));
-        player.showDialog((DialogLike) dialog);
+        if (!BedrockMenus.send(this.plugin, player, buttons, this.callbacks)) {
+            player.showDialog((DialogLike) dialog);
+        }
     }
 
     private ActionButton orbsTopButton() {
         return ActionButton.builder(IconSupport.withIcon(Material.ENDER_PEARL, Component.text("Orbs Top", NamedTextColor.AQUA)))
                 .tooltip(Component.text("See who has the most Orbs on the server", NamedTextColor.GRAY))
                 .width(200)
-                .action(DialogAction.customClick((view, audience) -> {
+                .action(this.track((view, audience) -> {
                     if (audience instanceof Player p) {
                         this.openLater(p, this::openOrbsTop);
                     }
@@ -558,7 +576,9 @@ public class CoinShopGUI {
                         .body(body.stream().map(DialogBody::plainMessage).toList())
                         .build())
                 .type(DialogType.multiAction(buttons).build()));
-        player.showDialog((DialogLike) dialog);
+        if (!BedrockMenus.send(this.plugin, player, buttons, this.callbacks)) {
+            player.showDialog((DialogLike) dialog);
+        }
     }
 
     private ActionButton cosmeticButton(Material icon, Component label, String displayName, double price, Set<String> unlockedSet, String key, Supplier<String> activeGetter, Consumer<String> activeSetter, Runnable reopen, boolean refreshCosmetics) {
@@ -581,7 +601,7 @@ public class CoinShopGUI {
         return ActionButton.builder(buttonText)
                 .tooltip(tooltip)
                 .width(240)
-                .action(DialogAction.customClick((view, audience) -> {
+                .action(this.track((view, audience) -> {
                     if (!(audience instanceof Player p)) {
                         return;
                     }
@@ -623,7 +643,7 @@ public class CoinShopGUI {
         return ActionButton.builder(IconSupport.withIcon(Material.ARROW, Component.text("<< Back", NamedTextColor.RED)))
                 .tooltip(Component.text(tooltipText, NamedTextColor.GRAY))
                 .width(120)
-                .action(DialogAction.customClick((view, audience) -> {
+                .action(this.track((view, audience) -> {
                     if (audience instanceof Player p) {
                         CoinShopGUI.this.openLater(p, target);
                     }
@@ -647,6 +667,8 @@ public class CoinShopGUI {
                         .afterAction(DialogBase.DialogAfterAction.NONE)
                         .build())
                 .type(DialogType.multiAction(buttons).build()));
-        player.showDialog((DialogLike) dialog);
+        if (!BedrockMenus.send(this.plugin, player, buttons, this.callbacks)) {
+            player.showDialog((DialogLike) dialog);
+        }
     }
 }

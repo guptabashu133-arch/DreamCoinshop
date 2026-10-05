@@ -1,0 +1,110 @@
+# ================================================
+#   Dreamcoinshop - messages.yml
+#   Every player-facing message the plugin sends lives here.
+#   MiniMessage formatting is supported (<red>, <gradient:...>, <bold>, etc).
+#   Placeholders are written as <placeholder> and are listed above each line.
+#
+#   Style pattern used throughout: the whole line is wrapped in
+#   <shadow:black>...</shadow> for a bit of depth/pop, plain body text stays
+#   white/gray, and the important keyword (coins, orbs, a player name, an
+#   item name) gets its own colour + <bold> so it jumps out at a glance.
+# ================================================
+
+general:
+  player-only: "<shadow:black><red>Only players can do that.</red></shadow>"
+  not-online: "<shadow:black><red>That player is not online.</red></shadow>"
+  no-permission: "<shadow:black><red>You don't have permission to do that.</red></shadow>"
+  invalid-amount: "<shadow:black><red>That's not a valid amount.</red></shadow>"
+  amount-must-be-positive: "<shadow:black><red>Amount must be positive.</red></shadow>"
+
+# /coin ...
+coin:
+  # <player>, <balance>
+  balance-self: "<shadow:black><white>Your balance: <gold><bold><balance> coins</bold></gold></white></shadow>"
+  balance-other: "<shadow:black><white><aqua><player></aqua>'s balance: <gold><bold><balance> coins</bold></gold></white></shadow>"
+  usage-balance-console: "<shadow:black><red>Console must specify a player: <gray>/coin balance <player></gray></red></shadow>"
+  usage-give: "<shadow:black><red>Usage: <gray>/coin give <player> <amount></gray></red></shadow>"
+  usage-giveall: "<shadow:black><red>Usage: <gray>/coin giveall <amount></gray></red></shadow>"
+  usage-remove: "<shadow:black><red>Usage: <gray>/coin remove <player> <amount></gray></red></shadow>"
+  usage-set: "<shadow:black><red>Usage: <gray>/coin set <player> <amount></gray></red></shadow>"
+  # <player>, <amount>
+  gave: "<shadow:black><green>Gave <gold><bold><amount> coins</bold></gold> to <aqua><player></aqua></green></shadow>"
+  received: "<shadow:black><white><gold><bold><amount> coins</bold></gold> has been added to your account!</white></shadow>"
+  gave-all: "<shadow:black><green>Gave <gold><bold><amount> coins</bold></gold> to every online player.</green></shadow>"
+  received-all: "<shadow:black><white>Added <gold><bold><amount> coins</bold></gold> to All Online players.</white></shadow>"
+  removed: "<shadow:black><green>Removed <gold><bold><amount> coins</bold></gold> from <aqua><player></aqua></green></shadow>"
+  set: "<shadow:black><green>Set <aqua><player></aqua>'s balance to <gold><bold><amount> coins</bold></gold></green></shadow>"
+  help-header: "<shadow:black><gold><bold>--- Coins Help ---</bold></gold></shadow>"
+
+# /coinshop menu
+shop:
+  not-enough-coins: "<shadow:black><red>You don't have enough coins for that.</red></shadow>"
+  # <item>
+  unlocked: "<shadow:black><green>Unlocked <yellow><bold><item></bold></yellow>! Click it again to equip it.</green></shadow>"
+  unlocked-perk: "<shadow:black><green>Unlocked <yellow><bold><item></bold></yellow>!</green></shadow>"
+  equipped: "<shadow:black><green>Equipped <yellow><bold><item></bold></yellow>!</green></shadow>"
+  unequipped: "<shadow:black><yellow>Unequipped <white><item></white>.</yellow></shadow>"
+  already-unlocked: "<shadow:black><gray>Already unlocked</gray></shadow>"
+  purchased-wand: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow>!</green></shadow>"
+  # <item> - used for placeholder buttons that aren't wired up to real purchase logic yet
+  coming-soon: "<shadow:black><yellow><bold><item></bold> isn't purchasable yet - coming soon!</yellow></shadow>"
+  balance-line: "<shadow:black><gray>Your balance: <gold><bold><balance> coins</bold></gold></gray></shadow>"
+
+# sellwand + spawner sellwand
+sellwand:
+  no-uses: "<shadow:black><red>This sellwand is out of uses!</red></shadow>"
+  nothing-sellable: "<shadow:black><yellow>Nothing sellable was found in that chest.</yellow></shadow>"
+  # <amount>
+  sold: "<shadow:black><green>Sold chest contents for <gold><bold><amount> coins</bold></gold>!</green></shadow>"
+  broke: "<shadow:black><red>Your sellwand broke!</red></shadow>"
+
+# Buy Coins dialog - the only section with the coin emoji, per request
+buycoins:
+  # <price>, <coins> - one line per tier, shown as info text in the Buy Coins dialog
+  tier-line: "<shadow:black><gray><price> <dark_gray>→</dark_gray> <gold><bold><coins> coins 🪙</bold></gold></gray></shadow>"
+  # <url>
+  visit-store: "<shadow:black><gold>Click here to visit the store and buy coins 🪙: <aqua><underlined><url></underlined></aqua></gold></shadow>"
+  no-url-configured: "<shadow:black><red>No store link has been configured yet - ask an admin to set store-url in config.yml.</red></shadow>"
+
+# Orbs (second currency)
+orbs:
+  # <amount> - broadcast to a player individually every orbs.interval-minutes
+  received: "<shadow:black><white>You received <light_purple><bold><amount> orbs</bold></light_purple> playing this server!</white></shadow>"
+  balance-self: "<shadow:black><gray>Your Orbs balance: <light_purple><bold><balance> orbs</bold></light_purple></gray></shadow>"
+  balance-other: "<shadow:black><gray><aqua><player></aqua>'s Orbs balance: <light_purple><bold><balance> orbs</bold></light_purple></gray></shadow>"
+  not-enough-orbs: "<shadow:black><red>You don't have enough orbs for that.</red></shadow>"
+  # <item>, <price>
+  purchased: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow> for <light_purple><bold><price> orbs</bold></light_purple>!</green></shadow>"
+
+# /orbwand + orb zone action bar
+orbzone:
+  # <icon> = cycling item texture, <amount>, <time> = m:ss left
+  actionbar: "<icon> <gradient:#C084FC:#F0ABFC><bold>+<amount> Orb</bold></gradient> <dark_gray>»</dark_gray> <white><time></white>"
+  wand-given: "<shadow:black><green>Orb Wand given. <gray>Left click = pos 1, right click = pos 2, then <yellow>/orbwand create <name></yellow></gray></green></shadow>"
+  pos1: "<shadow:black><light_purple>Position 1</light_purple> <gray>set to <white><pos></white></gray></shadow>"
+  pos2: "<shadow:black><light_purple>Position 2</light_purple> <gray>set to <white><pos></white></gray></shadow>"
+  need-selection: "<shadow:black><red>Select both positions with the Orb Wand first.</red></shadow>"
+  different-worlds: "<shadow:black><red>Both positions must be in the same world.</red></shadow>"
+  created: "<shadow:black><green>Orb zone <light_purple><bold><name></bold></light_purple> created.</green></shadow>"
+  updated: "<shadow:black><green>Orb zone <light_purple><bold><name></bold></light_purple> updated.</green></shadow>"
+  deleted: "<shadow:black><green>Orb zone <light_purple><bold><name></bold></light_purple> deleted.</green></shadow>"
+  not-found: "<shadow:black><red>No orb zone called <name>.</red></shadow>"
+  list-empty: "<shadow:black><gray>No orb zones yet. Use <yellow>/orbwand</yellow>.</gray></shadow>"
+  list-entry: "<shadow:black><light_purple><bold><name></bold></light_purple> <gray><world>: <white><pos1></white> -> <white><pos2></white></gray></shadow>"
+  usage: "<shadow:black><red>Usage: <gray>/orbwand [create <name>|delete <name>|list]</gray></red></shadow>"
+
+# /orb ... (admin command, mirrors /coin)
+orbcmd:
+  usage-balance-console: "<shadow:black><red>Console must specify a player: <gray>/orb balance <player></gray></red></shadow>"
+  usage-give: "<shadow:black><red>Usage: <gray>/orb give <player> <amount></gray></red></shadow>"
+  usage-giveall: "<shadow:black><red>Usage: <gray>/orb giveall <amount></gray></red></shadow>"
+  usage-remove: "<shadow:black><red>Usage: <gray>/orb remove <player> <amount></gray></red></shadow>"
+  usage-set: "<shadow:black><red>Usage: <gray>/orb set <player> <amount></gray></red></shadow>"
+  # <player>, <amount>
+  gave: "<shadow:black><green>Gave <light_purple><bold><amount> orbs</bold></light_purple> to <aqua><player></aqua></green></shadow>"
+  received: "<shadow:black><white><light_purple><bold><amount> orbs</bold></light_purple> has been added to your account!</white></shadow>"
+  gave-all: "<shadow:black><green>Gave <light_purple><bold><amount> orbs</bold></light_purple> to every online player.</green></shadow>"
+  received-all: "<shadow:black><white>Added <light_purple><bold><amount> orbs</bold></light_purple> to All Online players.</white></shadow>"
+  removed: "<shadow:black><green>Removed <light_purple><bold><amount> orbs</bold></light_purple> from <aqua><player></aqua></green></shadow>"
+  set: "<shadow:black><green>Set <aqua><player></aqua>'s Orbs balance to <light_purple><bold><amount> orbs</bold></light_purple></green></shadow>"
+  help-header: "<shadow:black><light_purple><bold>--- Orbs Help ---</bold></light_purple></shadow>"

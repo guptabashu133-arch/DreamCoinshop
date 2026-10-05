@@ -1,0 +1,266 @@
+# ================================================
+#   Dreamcoinshop - Coinshop configuration
+#   Edit prices / lists here, no code changes needed
+# ================================================
+
+# What currency the /coinshop menu spends. This refers to the "Coins" balance
+# tracked by CoinsManager (NOT the Vault "$" money).
+settings:
+  gui-title: "<gold><bold>Coinshop"
+
+  # Master switch for every sound effect in sounds.yml. Set to false to make
+  # the whole plugin completely silent without deleting sounds.yml.
+  sounds-enabled: true
+
+  # How the chat prefix/tag is placed relative to the player's name.
+  # Placeholders: <name> = player's name (with gradient applied if equipped)
+  #               <tag>  = the equipped tag component (empty if none equipped)
+  # Default puts the tag AFTER the name (right side), e.g. "Steve [VIP]: hello"
+  chat-name-format: "<name> <tag>"
+
+  # Console command run when a Spawner Sellwand tier is purchased. %player% is
+  # replaced with the buyer's name, %multiplier% with the tier's multiplier
+  # written like "1.5x" - matches what you already type by hand, e.g.
+  # "ds givewand Steve 1.5x". Edit this if your command is different.
+  spawnerwand-give-command: "ds givewand %player% %multiplier%"
+
+  # Titles shown at the top of every /coinshop screen. Edit freely.
+  menu-titles:
+    main: "<gold><bold>Coinshop"
+    chatcolors: "<gold><bold>Chat Colour"
+    glows: "<gold><bold>Glow"
+    perks: "<gold><bold>Perks"
+    tags: "<gold><bold>Tags"
+    gradients: "<gold><bold>Name Gradient"
+    sellwands: "<gold><bold>Sellwands"
+    spawnerwands: "<gold><bold>Spawner Sellwands"
+    buycoins: "<gold><bold>Buy Coins"
+    topcoins: "<gold><bold>Top Coins"
+    orbshop: "<light_purple><bold>Orbshop"
+
+  # Descriptions shown on the main menu category buttons.
+  menu-descriptions:
+    chatcolors: "Unlock colours & gradients for your chat messages"
+    glows: "Unlock a glowing name colour"
+    perks: "Unlock handy commands like /craft and /enderchest"
+    tags: "Unlock a tag shown next to your name in chat"
+    gradients: "Unlock a gradient colour for your name"
+    sellwands: "Buy wands that instantly sell a chest's contents"
+    spawnerwands: "Buy wands that instantly sell spawners at a bonus rate"
+    buycoins: "Top up your Coins balance with real money"
+    topcoins: "See who has the most Coins on the server"
+    orbshop: "Spend your Orbs on spawners"
+
+  # Store link opened by the "Visit Store" button in the Buy Coins dialog.
+  store-url: "https://store.taraashmc.fun"
+
+# ---------------- Chat Colours ----------------
+# key: internal id (also used for permission-less unlock tracking)
+# display: shown name
+# color: MiniMessage color / hex used for the preview + actual chat colour
+# price: cost in Coins
+chatcolors:
+  red:          { display: "Red",           color: "#FF5555", price: 1000 }
+  gold:         { display: "Gold",          color: "#FFAA00", price: 1000 }
+  yellow:       { display: "Yellow",        color: "#FFFF55", price: 1000 }
+  green:        { display: "Green",         color: "#55FF55", price: 1000 }
+  aqua:         { display: "Aqua",          color: "#55FFFF", price: 1000 }
+  blue:         { display: "Blue",          color: "#5555FF", price: 1000 }
+  light_purple: { display: "Pink",          color: "#FF55FF", price: 1000 }
+  white:        { display: "White",         color: "#FFFFFF", price: 1000 }
+  dark_red:     { display: "Dark Red",      color: "#AA0000", price: 1000 }
+  dark_green:   { display: "Dark Green",    color: "#00AA00", price: 1000 }
+  dark_aqua:    { display: "Dark Aqua",     color: "#00AAAA", price: 1000 }
+  dark_purple:  { display: "Dark Purple",   color: "#AA00AA", price: 1000 }
+  # gradient chat colours (whole message is rendered as a gradient)
+  sunset_gradient: { display: "Sunset Gradient", gradient: ["#FF512F", "#F09819"], price: 1200 }
+  ocean_gradient:  { display: "Ocean Gradient",  gradient: ["#2193b0", "#6dd5ed"], price: 1200 }
+  toxic_gradient:  { display: "Toxic Gradient",  gradient: ["#a8ff78", "#78ffd6"], price: 1200 }
+
+# ---------------- Name Glow (Glowing effect colour) ----------------
+glows:
+  red:          { display: "Red Glow",     color: "#FF5555", price: 1000 }
+  gold:         { display: "Gold Glow",    color: "#FFAA00", price: 1000 }
+  green:        { display: "Green Glow",   color: "#55FF55", price: 1000 }
+  aqua:         { display: "Aqua Glow",    color: "#55FFFF", price: 1000 }
+  blue:         { display: "Blue Glow",    color: "#5555FF", price: 1000 }
+  purple:       { display: "Purple Glow",  color: "#AA00AA", price: 1000 }
+  white:        { display: "White Glow",   color: "#FFFFFF", price: 1000 }
+  rainbow:      { display: "Rainbow Glow", rainbow: true,    price: 1500 }
+
+# ---------------- Perks ----------------
+# permission: the bukkit permission that gets granted (via PermissionAttachment) while online.
+# This plugin only grants/revokes the permission node itself - it doesn't add the /craft,
+# /smithingtable, etc. commands. Point each `permission:` at whatever plugin already provides
+# that command on your server (e.g. EssentialsX uses "essentials.craft", "essentials.enderchest",
+# etc.) so owning the perk actually unlocks the command. Edit freely - order here is menu order.
+perks:
+  craft:         { display: "/craft",         permission: "dreamcoinshop.perk.craft",         price: 100 }
+  smithingtable: { display: "/smithingtable", permission: "dreamcoinshop.perk.smithingtable", price: 100 }
+  grindstone:    { display: "/grindstone",    permission: "dreamcoinshop.perk.grindstone",    price: 100 }
+  anvil:         { display: "/anvil",         permission: "dreamcoinshop.perk.anvil",         price: 100 }
+  enderchest:    { display: "/enderchest",    permission: "dreamcoinshop.perk.enderchest",    price: 100 }
+  nick:          { display: "/nick",          permission: "dreamcoinshop.perk.nick",          price: 100 }
+
+# ---------------- Tags ----------------
+tags:
+  phoenix: { display: "[PHOENIX]", text: "<bold><gradient:#ff6a00:#ee0979>PHOENIX</gradient></bold>", price: 1000 }
+  vip:     { display: "[VIP]",     text: "<bold><gradient:#ffd700:#ff8c00>VIP</gradient></bold>",     price: 1000 }
+  queen:   { display: "[QUEEN]",   text: "<bold><gradient:#ff1493:#ff69b4>QUEEN</gradient></bold>",    price: 1000 }
+  pro:     { display: "[PRO]",     text: "<bold><gradient:#00c6ff:#0072ff>PRO</gradient></bold>",       price: 1000 }
+  legend:  { display: "[LEGEND]",  text: "<bold><gradient:#f7971e:#ff5f6d>LEGEND</gradient></bold>",   price: 1000 }
+  god:     { display: "[GOD]",     text: "<bold><gradient:#ffd700:#ff9d00>GOD</gradient></bold>",      price: 1000 }
+  king:    { display: "[KING]",    text: "<bold><gradient:#ffd700:#ff4500>KING</gradient></bold>",     price: 1000 }
+  angel:   { display: "[ANGEL]",   text: "<bold><gradient:#ffb6c1:#ffd9e6>ANGEL</gradient></bold>",    price: 1000 }
+  boss:    { display: "[BOSS]",    text: "<bold><gradient:#ff0000:#8b0000>BOSS</gradient></bold>",     price: 1000 }
+  dream:   { display: "[DREAM]",   text: "<bold><gradient:#667eea:#764ba2>DREAM</gradient></bold>",    price: 1000 }
+
+# ---------------- Name Gradients ----------------
+# applies to the player's name in chat + tab list
+namegradients:
+  sunset: { display: "Sunset", from: "#FF512F", to: "#F09819", price: 1000 }
+  ocean:  { display: "Ocean",  from: "#2193b0", to: "#6dd5ed", price: 1000 }
+  fire:   { display: "Fire",   from: "#f12711", to: "#f5af19", price: 1000 }
+  toxic:  { display: "Toxic",  from: "#a8ff78", to: "#78ffd6", price: 1000 }
+  galaxy: { display: "Galaxy", from: "#360033", to: "#0b8793", price: 1000 }
+  candy:  { display: "Candy",  from: "#ff9a9e", to: "#fecfef", price: 1000 }
+  gold:   { display: "Gold",   from: "#BF953F", to: "#FCF6BA", price: 1000 }
+  ice:    { display: "Ice",    from: "#83a4d4", to: "#b6fbff", price: 1000 }
+
+# ---------------- Sellwands ----------------
+# multiplier is applied on top of the base sell price defined below in sell-prices
+sellwands:
+  tier1: { display: "Sellwand I",   multiplier: 1.5, uses: 500,  price: 825 }
+  tier2: { display: "Sellwand II",  multiplier: 2.0, uses: 750,  price: 1600 }
+  tier3: { display: "Sellwand III", multiplier: 2.5, uses: 1000, price: 2600 }
+
+# Base sell price per material, used when a Sellwand empties a chest.
+# Add / edit materials here to match your server economy (e.g. mirror your ShopGUIPlus prices).
+sell-prices:
+  COBBLESTONE: 1
+  STONE: 1
+  COAL: 3
+  IRON_INGOT: 8
+  GOLD_INGOT: 12
+  DIAMOND: 40
+  EMERALD: 35
+  NETHERITE_SCRAP: 90
+  ROTTEN_FLESH: 0.5
+  BONE: 1
+  STRING: 1
+  GUNPOWDER: 2
+  REDSTONE: 1
+  LAPIS_LAZULI: 2
+  RAW_IRON: 6
+  RAW_GOLD: 10
+  RAW_COPPER: 2
+  COPPER_INGOT: 3
+
+# ---------------- Spawner Sellwands ----------------
+# On purchase this runs settings.spawnerwand-give-command from console (default
+# "ds givewand %player% %multiplier%") - the same command you already use by hand
+# to give spawner sellwands, e.g. "ds givewand Steve 1.5x". `uses` is shown on the
+# button as info only; it isn't sent in the command since your /ds plugin manages
+# uses itself.
+spawnerwands:
+  tier1: { display: "Spawner Sellwand I",   multiplier: 1.5,  uses: 500,  price: 1200 }
+  tier2: { display: "Spawner Sellwand II",  multiplier: 1.75, uses: 750,  price: 2000 }
+  tier3: { display: "Spawner Sellwand III", multiplier: 2.0,  uses: 1000, price: 3000 }
+
+# ---------------- Buy Coins (real money top-up) ----------------
+# The Buy Coins dialog shows these price tiers as plain info text, plus a
+# "Visit Store" button that sends the player a clickable link to settings.store-url
+# (above) in chat. price-label/coins are just what's SHOWN on screen - they don't
+# charge anything themselves; your store/payment gateway is what actually charges
+# the player and should credit coins via `/coin give <player> <amount>`.
+buycoins:
+  tier1: { price-label: "₹100", coins: 500 }
+  tier2: { price-label: "₹200", coins: 1100 }
+  tier3: { price-label: "₹300", coins: 1800 }
+  tier4: { price-label: "₹400", coins: 2600 }
+  tier5: { price-label: "₹500", coins: 3500 }
+
+# ---------------- Orbs (second, separate currency) ----------------
+# Every online player automatically receives `amount-per-interval` Orbs every
+# `interval-minutes` minutes, with a chat message (see messages.yml -> orbs.received).
+orbs:
+  interval-minutes: 5
+  amount-per-interval: 1
+  gui-title: "<light_purple><bold>Orbshop"
+
+# ---------------- Orb Zones (/orbwand) ----------------
+# /orbwand gives a golden axe: left click a block = position 1, right click = position 2,
+# then /orbwand create <name>. Players standing inside a zone get `amount` Orbs every
+# `interval-seconds`, with a countdown in their action bar. Leaving the zone stops it
+# immediately and resets the countdown. /orbwand list, /orbwand delete <name>.
+# (Set orbs.interval-minutes above to 0 to turn off the everyone-online payout.)
+orbzones:
+  enabled: true
+  interval-seconds: 60
+  amount: 1
+  # Item textures shown in the action bar, cycled every icon-change-seconds.
+  # Java 1.21.9+ only - Bedrock players just see the text.
+  icon-change-seconds: 3
+  actionbar-icons:
+    - EXPERIENCE_BOTTLE
+    - ENDER_PEARL
+    - AMETHYST_SHARD
+    - NETHER_STAR
+
+# ---------------- Storage ----------------
+# How often coins.yml and orbs.yml are written to disk, in seconds.
+#
+# Balances are kept in memory and written by a background task, so a balance
+# change never touches the disk on the server thread. This used to work the
+# other way round: every single change rewrote the ENTIRE file, synchronously,
+# on the main thread. One orb payout to 42 online players meant 42 full file
+# writes in a row - a spark profile taken while TPS was dropping showed 94% of
+# everything this plugin did was that one call. It also got slower every month,
+# because the cost scaled with how many players had EVER been in the file, not
+# how many were online.
+#
+# The trade: an UNCLEAN stop (OOM kill, panel force-stop, power loss) can lose
+# up to this many seconds of balance changes. A normal stop or restart never
+# loses anything - the plugin flushes on shutdown. Lower this for a smaller
+# window at the cost of a little more disk I/O; values under 5 are treated as 5.
+storage:
+  balance-save-interval-seconds: 15
+
+# ---------------- Orbshop (spend Orbs on spawners) ----------------
+# Opened from the "Orbshop" button on the main /coinshop menu. Each entry's
+# `commands` run from console on purchase with %player% replaced by the buyer's
+# name - a list because you can run more than one command per item if needed.
+#
+# Uses your own spawner plugin's give command: "ds give <player> <TYPE>"
+# (same plugin as the /ds givewand command used for Spawner Sellwands above).
+orbshop:
+  allay:
+    display: "Allay Spawner"
+    price: 150
+    commands:
+      - "ds give %player% ALLAY"
+  enderman:
+    display: "Enderman Spawner"
+    price: 300
+    commands:
+      - "ds give %player% ENDERMAN"
+  creeper:
+    display: "Creeper Spawner"
+    price: 450
+    commands:
+      - "ds give %player% CREEPER"
+  turtle:
+    display: "Turtle Spawner"
+    price: 600
+    commands:
+      - "ds give %player% TURTLE"
+  breeze:
+    display: "Breeze Spawner"
+    price: 700
+    commands:
+      - "ds give %player% BREEZE"
+  evoker:
+    display: "Evoker Spawner"
+    price: 1000
+    commands:
+      - "ds give %player% EVOKER"
