@@ -165,6 +165,9 @@ public final class Dreamcoinshop extends JavaPlugin {
         for (Player player : this.getServer().getOnlinePlayers()) {
             PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
             if (profile.getActiveGlow() == null) continue;
+            // Only repair what is actually missing: re-adding the effect and re-joining the team
+            // every 5 s broadcast effect, metadata and team packets for every glowing player.
+            if (this.glowIntact(player, profile)) continue;
             this.refreshGlow(player, profile);
         }
     }
@@ -238,6 +241,13 @@ public final class Dreamcoinshop extends JavaPlugin {
             }
         }
         return player.getName();
+    }
+
+    private boolean glowIntact(Player player, PlayerProfile profile) {
+        ShopOptions.GlowOption opt = this.shopConfig.getGlows().get(profile.getActiveGlow());
+        if (opt == null || !player.hasPotionEffect(PotionEffectType.GLOWING)) return false;
+        Team team = player.getScoreboard().getTeam("dcs_glow_" + (opt.rainbow() ? "rainbow" : opt.key()));
+        return team != null && team.hasEntry(player.getName());
     }
 
     private void refreshGlow(Player player, PlayerProfile profile) {
