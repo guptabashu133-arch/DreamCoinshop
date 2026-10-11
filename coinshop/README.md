@@ -180,3 +180,8 @@ value in `sounds.yml` to mute just that one.
   section (it gets re-added on start). Unlocked tags stay unlocked.
 - Messages: `headhunt.*` in `messages.yml`. Sounds: `headhunt-*` in `sounds.yml`. Both merge
   into your existing files automatically.
+- **`/coinshop events reset [event] confirm`** (admin, works from console too) wipes the hunt
+  for **every** player, online and offline: found heads go back to 0, and the reward tag is
+  taken away (and unequipped) from everyone who had it. Other tags and cosmetics are untouched,
+  and placed heads stay where they are. Without `confirm` it only shows a warning. The result
+  is logged to console.

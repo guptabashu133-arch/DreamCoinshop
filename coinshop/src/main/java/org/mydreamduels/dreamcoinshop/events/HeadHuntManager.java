@@ -23,6 +23,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -45,6 +46,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.mydreamduels.dreamcoinshop.Dreamcoinshop;
 import org.mydreamduels.dreamcoinshop.config.MessagesConfig;
+import org.mydreamduels.dreamcoinshop.data.PlayerDataManager;
 import org.mydreamduels.dreamcoinshop.data.PlayerProfile;
 import org.mydreamduels.dreamcoinshop.shopdata.ShopOptions;
 
@@ -72,23 +74,51 @@ public class HeadHuntManager implements Listener {
         this.plugin = plugin;
     }
 
-    /** /coinshop events [hunt] - gives the sender every numbered head for that hunt. */
-    public void giveHeads(Player player, String huntArg) {
-        MessagesConfig msg = this.plugin.getMessages();
+    /** The hunt named huntArg (case-insensitive), or the first configured one if huntArg is null. Tells sender if none. */
+    private ShopOptions.HeadHunt findHunt(CommandSender sender, String huntArg) {
         Map<String, ShopOptions.HeadHunt> hunts = this.plugin.getShopConfig().getHeadHunts();
-        ShopOptions.HeadHunt hunt = null;
         if (huntArg == null) {
-            hunt = hunts.values().stream().findFirst().orElse(null);
+            ShopOptions.HeadHunt first = hunts.values().stream().findFirst().orElse(null);
+            if (first != null) {
+                return first;
+            }
         } else {
             for (ShopOptions.HeadHunt h : hunts.values()) {
                 if (h.key().equalsIgnoreCase(huntArg)) {
-                    hunt = h;
-                    break;
+                    return h;
                 }
             }
         }
+        sender.sendMessage(this.plugin.getMessages().get("headhunt.unknown-event", MessagesConfig.ph("event", huntArg == null ? "" : huntArg), MessagesConfig.ph("list", hunts.isEmpty() ? "none" : String.join(", ", hunts.keySet()))));
+        return null;
+    }
+
+    /**
+     * /coinshop events reset [hunt] confirm - wipes every player's progress for the hunt and takes
+     * its reward tag back, so the hunt starts fresh for everyone. Without "confirm" it only warns.
+     */
+    public void resetHunt(CommandSender sender, String huntArg, boolean confirmed) {
+        MessagesConfig msg = this.plugin.getMessages();
+        ShopOptions.HeadHunt hunt = this.findHunt(sender, huntArg);
         if (hunt == null) {
-            player.sendMessage(msg.get("headhunt.unknown-event", MessagesConfig.ph("event", huntArg == null ? "" : huntArg), MessagesConfig.ph("list", hunts.isEmpty() ? "none" : String.join(", ", hunts.keySet()))));
+            return;
+        }
+        TagResolver event = MessagesConfig.ph("event", hunt.key());
+        if (!confirmed) {
+            sender.sendMessage(msg.get("headhunt.reset-confirm", event, this.tagPlaceholder(hunt)));
+            return;
+        }
+        PlayerDataManager.HuntResetResult result = this.plugin.getPlayerDataManager().resetHeadHunt(hunt.key(), hunt.rewardTag());
+        this.lastClick.clear();
+        this.plugin.getLogger().info("[HeadHunt] " + sender.getName() + " reset '" + hunt.key() + "': cleared progress for " + result.progressCleared() + " players, removed tag '" + hunt.rewardTag() + "' from " + result.tagsRemoved() + ".");
+        sender.sendMessage(msg.get("headhunt.reset-done", event, this.tagPlaceholder(hunt), MessagesConfig.ph("players", result.progressCleared()), MessagesConfig.ph("tags", result.tagsRemoved())));
+    }
+
+    /** /coinshop events [hunt] - gives the sender every numbered head for that hunt. */
+    public void giveHeads(Player player, String huntArg) {
+        MessagesConfig msg = this.plugin.getMessages();
+        ShopOptions.HeadHunt hunt = this.findHunt(player, huntArg);
+        if (hunt == null) {
             return;
         }
         if (!hunt.enabled()) {

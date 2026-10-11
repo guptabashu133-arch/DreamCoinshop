@@ -35,6 +35,20 @@ public class CoinShopCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(this.plugin.getMessages().get("general.no-permission", new TagResolver[0]));
                 return true;
             }
+            // /coinshop events reset [event] confirm
+            if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
+                String huntArg = null;
+                boolean confirmed = false;
+                for (int i = 2; i < args.length; ++i) {
+                    if (args[i].equalsIgnoreCase("confirm")) {
+                        confirmed = true;
+                    } else if (huntArg == null) {
+                        huntArg = args[i];
+                    }
+                }
+                this.plugin.getHeadHuntManager().resetHunt(sender, huntArg, confirmed);
+                return true;
+            }
             if (!(sender instanceof Player admin)) {
                 sender.sendMessage(this.plugin.getMessages().get("general.player-only", new TagResolver[0]));
                 return true;
@@ -61,8 +75,17 @@ public class CoinShopCommand implements CommandExecutor, TabCompleter {
                 if (sub.startsWith(args[0].toLowerCase())) out.add(sub);
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("events")) {
-            for (String hunt : this.plugin.getShopConfig().getHeadHunts().keySet()) {
-                if (hunt.toLowerCase().startsWith(args[1].toLowerCase())) out.add(hunt);
+            List<String> options = new ArrayList<>(this.plugin.getShopConfig().getHeadHunts().keySet());
+            options.add("reset");
+            for (String option : options) {
+                if (option.toLowerCase().startsWith(args[1].toLowerCase())) out.add(option);
+            }
+        } else if (args.length >= 3 && args[0].equalsIgnoreCase("events") && args[1].equalsIgnoreCase("reset")) {
+            List<String> options = new ArrayList<>();
+            if (args.length == 3) options.addAll(this.plugin.getShopConfig().getHeadHunts().keySet());
+            options.add("confirm");
+            for (String option : options) {
+                if (option.toLowerCase().startsWith(args[args.length - 1].toLowerCase())) out.add(option);
             }
         }
         return out;

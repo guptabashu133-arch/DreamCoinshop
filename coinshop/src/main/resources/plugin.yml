@@ -11,7 +11,7 @@ commands:
     usage: /coin <balance|give|giveall|remove|set|help>
   coinshop:
     description: Opens the Coinshop dialog menu. /coinshop reload reloads all configs, /coinshop events gives head hunt event heads.
-    usage: /coinshop [reload|events [event]]
+    usage: /coinshop [reload|events [event]|events reset [event] confirm]
     aliases: [cs]
   orb:
     description: Manage the custom Orbs currency.
