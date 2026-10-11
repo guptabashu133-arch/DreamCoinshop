@@ -1,5 +1,7 @@
 package org.mydreamduels.dreamcoinshop.commands;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -7,10 +9,11 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.mydreamduels.dreamcoinshop.Dreamcoinshop;
 
-public class CoinShopCommand implements CommandExecutor {
+public class CoinShopCommand implements CommandExecutor, TabCompleter {
     private final Dreamcoinshop plugin;
 
     public CoinShopCommand(Dreamcoinshop plugin) {
@@ -27,6 +30,18 @@ public class CoinShopCommand implements CommandExecutor {
             sender.sendMessage(Component.text("Dreamcoinshop reloaded (config.yml, messages.yml, sounds.yml).", (TextColor) NamedTextColor.GREEN));
             return true;
         }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("events")) {
+            if (!sender.hasPermission("dreamcoinshop.admin")) {
+                sender.sendMessage(this.plugin.getMessages().get("general.no-permission", new TagResolver[0]));
+                return true;
+            }
+            if (!(sender instanceof Player admin)) {
+                sender.sendMessage(this.plugin.getMessages().get("general.player-only", new TagResolver[0]));
+                return true;
+            }
+            this.plugin.getHeadHuntManager().giveHeads(admin, args.length >= 2 ? args[1] : null);
+            return true;
+        }
         if (!(sender instanceof Player)) {
             sender.sendMessage(this.plugin.getMessages().get("general.player-only", new TagResolver[0]));
             return true;
@@ -34,5 +49,22 @@ public class CoinShopCommand implements CommandExecutor {
         Player player = (Player) sender;
         this.plugin.getCoinShopGUI().openMain(player);
         return true;
+    }
+
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        List<String> out = new ArrayList<>();
+        if (!sender.hasPermission("dreamcoinshop.admin")) {
+            return out;
+        }
+        if (args.length == 1) {
+            for (String sub : List.of("reload", "events")) {
+                if (sub.startsWith(args[0].toLowerCase())) out.add(sub);
+            }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("events")) {
+            for (String hunt : this.plugin.getShopConfig().getHeadHunts().keySet()) {
+                if (hunt.toLowerCase().startsWith(args[1].toLowerCase())) out.add(hunt);
+            }
+        }
+        return out;
     }
 }

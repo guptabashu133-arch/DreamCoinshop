@@ -91,3 +91,25 @@ orbcmd:
   removed: "<shadow:black><green>Removed <light_purple><bold><amount> orbs</bold></light_purple> from <aqua><player></aqua></green></shadow>"
   set: "<shadow:black><green>Set <aqua><player></aqua>'s Orbs balance to <light_purple><bold><amount> orbs</bold></light_purple></green></shadow>"
   help-header: "<shadow:black><light_purple><bold>--- Orbs Help ---</bold></light_purple></shadow>"
+
+# Head hunt events (/coinshop events). <tag> = the reward tag in its real colours.
+headhunt:
+  # <found>, <required>, <remaining>, <tag>
+  found: "<shadow:black><green>You found a head! <gold><bold><found>/<required></bold></gold> <white>- find <yellow><bold><remaining></bold></yellow> more for the</white> <tag> <white>tag!</white></green></shadow>"
+  already-found: "<shadow:black><yellow>You already found this head! <gray>(<found>/<required>)</gray></yellow></shadow>"
+  # <required>, <tag>
+  completed: "<shadow:black><green>You found all <gold><bold><required></bold></gold> heads! The <tag> <green>tag is unlocked - open <yellow>/coinshop</yellow> → <yellow>Tags</yellow> to equip it!</green></shadow>"
+  already-completed: "<shadow:black><gray>You already found all <required> heads and unlocked the <tag> <gray>tag.</gray></gray></shadow>"
+  # <player>, <required>, <tag> - sent to the whole server. Set to "" to turn it off.
+  broadcast: "<shadow:black><aqua><bold><player></bold></aqua> <white>found all <required> heads and unlocked the <tag> <white>tag!</white></white></shadow>"
+  event-over: "<shadow:black><gray>This event is over.</gray></shadow>"
+  event-only-tag: "<shadow:black><yellow>This tag can only be unlocked from an event.</yellow></shadow>"
+  protected: "<shadow:black><red>Event heads can't be broken - just click it to collect it!</red></shadow>"
+  place-no-permission: "<shadow:black><red>Only staff can place event heads.</red></shadow>"
+  # admin messages - <amount>, <tag>, <number>, <location>, <event>, <list>
+  given: "<shadow:black><green>Gave you <gold><bold><amount></bold></gold> event heads for the <tag> <green>tag. Place them anywhere - players click them to collect.</green></green></shadow>"
+  inventory-full: "<shadow:black><yellow>Your inventory was full - <amount> heads were dropped at your feet.</yellow></shadow>"
+  placed: "<shadow:black><green>Placed event head <white>#<number></white> at <white><location></white>.</green></shadow>"
+  removed: "<shadow:black><yellow>Removed event head <white>#<number></white>.</yellow></shadow>"
+  unknown-event: "<shadow:black><red>No head hunt called <white><event></white>. Available: <white><list></white></red></shadow>"
+  event-disabled: "<shadow:black><red>The <white><event></white> head hunt is disabled - set enabled: true under head-hunts in config.yml, then /coinshop reload.</red></shadow>"

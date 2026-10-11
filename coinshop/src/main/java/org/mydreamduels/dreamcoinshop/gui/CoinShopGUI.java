@@ -78,7 +78,8 @@ public class CoinShopGUI {
             Map.entry("queen", Material.PINK_DYE), Map.entry("pro", Material.EMERALD),
             Map.entry("legend", Material.GOLDEN_APPLE), Map.entry("god", Material.NETHER_STAR),
             Map.entry("king", Material.GOLD_BLOCK), Map.entry("angel", Material.PINK_TULIP),
-            Map.entry("boss", Material.REDSTONE_BLOCK), Map.entry("dream", Material.AMETHYST_SHARD)
+            Map.entry("boss", Material.REDSTONE_BLOCK), Map.entry("dream", Material.AMETHYST_SHARD),
+            Map.entry("india", Material.FIREWORK_ROCKET)
     );
     private static final Map<String, Material> PERK_ICONS = Map.of(
             "craft", Material.CRAFTING_TABLE, "smithingtable", Material.SMITHING_TABLE,
@@ -199,10 +200,12 @@ public class CoinShopGUI {
         PlayerProfile profile = this.plugin.getPlayerDataManager().get(player.getUniqueId());
         ArrayList<ActionButton> buttons = new ArrayList<>();
         for (ShopOptions.TagOption opt : this.plugin.getShopConfig().getTags().values()) {
+            // event tags (e.g. INDIA from the head hunt) only show up once the player has earned them
+            if (opt.eventOnly() && !profile.getUnlockedTags().contains(opt.key())) continue;
             Component preview = Component.text(player.getName() + " ", NamedTextColor.WHITE).append(MM.deserialize(opt.miniMessage()));
             preview = bedrockLabel(player, preview, player.getName() + " " + opt.display(), "#FFD700");
             Material icon = TAG_ICONS.getOrDefault(opt.key(), Material.PAPER);
-            buttons.add(this.cosmeticButton(icon, preview, opt.display(), opt.price(), profile.getUnlockedTags(), opt.key(), profile::getActiveTag, profile::setActiveTag, () -> this.openTags(player), false));
+            buttons.add(this.cosmeticButton(icon, preview, opt.display(), opt.price(), profile.getUnlockedTags(), opt.key(), profile::getActiveTag, profile::setActiveTag, () -> this.openTags(player), false, !opt.eventOnly()));
         }
         buttons.add(this.backButton(this::openMain));
         this.showMenu(player, "tags", "<gold><bold>Tags", buttons);
@@ -562,12 +565,20 @@ public class CoinShopGUI {
     }
 
     private ActionButton cosmeticButton(Material icon, Component label, String displayName, double price, Set<String> unlockedSet, String key, Supplier<String> activeGetter, Consumer<String> activeSetter, Runnable reopen, boolean refreshCosmetics) {
+        return this.cosmeticButton(icon, label, displayName, price, unlockedSet, key, activeGetter, activeSetter, reopen, refreshCosmetics, true);
+    }
+
+    /** purchasable=false: can only be equipped/unequipped once owned, never bought with coins (event rewards). */
+    private ActionButton cosmeticButton(Material icon, Component label, String displayName, double price, Set<String> unlockedSet, String key, Supplier<String> activeGetter, Consumer<String> activeSetter, Runnable reopen, boolean refreshCosmetics, boolean purchasable) {
         TextComponent tooltip;
         Component buttonText;
         MessagesConfig msg = this.plugin.getMessages();
         boolean owned = unlockedSet.contains(key);
         boolean active = owned && key.equals(activeGetter.get());
-        if (!owned) {
+        if (!owned && !purchasable) {
+            buttonText = label.append(Component.text("  [Event reward]", NamedTextColor.GRAY));
+            tooltip = Component.text("Only unlockable from an event", NamedTextColor.GRAY);
+        } else if (!owned) {
             buttonText = label.append(Component.text("  [" + (int) price + " coins]", NamedTextColor.GRAY));
             tooltip = Component.text("Click to purchase", NamedTextColor.YELLOW);
         } else if (active) {
@@ -586,7 +597,9 @@ public class CoinShopGUI {
                         return;
                     }
                     boolean isOwned = unlockedSet.contains(key);
-                    if (!isOwned) {
+                    if (!isOwned && !purchasable) {
+                        p.sendMessage(msg.get("headhunt.event-only-tag", new TagResolver[0]));
+                    } else if (!isOwned) {
                         if (this.plugin.getCoinsManager().remove(p.getUniqueId(), price)) {
                             unlockedSet.add(key);
                             p.sendMessage(msg.get("shop.unlocked", MessagesConfig.ph("item", displayName)));

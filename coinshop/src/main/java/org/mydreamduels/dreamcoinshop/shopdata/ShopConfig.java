@@ -23,6 +23,7 @@ public class ShopConfig {
     private final Map<String, ShopOptions.SpawnerWandTier> spawnerWands = new LinkedHashMap<>();
     private final Map<String, ShopOptions.BuyCoinsTier> buyCoins = new LinkedHashMap<>();
     private final Map<String, ShopOptions.OrbShopItem> orbShopItems = new LinkedHashMap<>();
+    private final Map<String, ShopOptions.HeadHunt> headHunts = new LinkedHashMap<>();
     private final Map<String, Double> sellPrices = new LinkedHashMap<>();
     private final Map<String, String> menuTitles = new LinkedHashMap<>();
     private final Map<String, String> menuDescriptions = new LinkedHashMap<>();
@@ -108,7 +109,7 @@ public class ShopConfig {
             for (String key : tt.getKeys(false)) {
                 ConfigurationSection s = tt.getConfigurationSection(key);
                 if (s == null) continue;
-                this.tags.put(key, new ShopOptions.TagOption(key, s.getString("display", key), s.getString("text", key), s.getDouble("price", 1000.0)));
+                this.tags.put(key, new ShopOptions.TagOption(key, s.getString("display", key), s.getString("text", key), s.getDouble("price", 1000.0), s.getBoolean("event-only", false)));
             }
         }
         this.nameGradients.clear();
@@ -163,6 +164,15 @@ public class ShopConfig {
                 this.orbShopItems.put(key, new ShopOptions.OrbShopItem(key, s.getString("display", key), s.getDouble("price", 10.0), s.getStringList("commands")));
             }
         }
+        this.headHunts.clear();
+        ConfigurationSection hh = cfg.getConfigurationSection("head-hunts");
+        if (hh != null) {
+            for (String key : hh.getKeys(false)) {
+                ConfigurationSection s = hh.getConfigurationSection(key);
+                if (s == null) continue;
+                this.headHunts.put(key, new ShopOptions.HeadHunt(key, s.getBoolean("enabled", true), Math.max(1, s.getInt("heads", 25)), s.getString("reward-tag", key), s.getString("head-name", key + " Head"), s.getString("texture", "")));
+            }
+        }
     }
 
     public String getGuiTitle() {
@@ -215,6 +225,10 @@ public class ShopConfig {
 
     public Map<String, ShopOptions.OrbShopItem> getOrbShopItems() {
         return this.orbShopItems;
+    }
+
+    public Map<String, ShopOptions.HeadHunt> getHeadHunts() {
+        return this.headHunts;
     }
 
     public Map<String, Double> getSellPrices() {

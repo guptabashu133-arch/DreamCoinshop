@@ -156,3 +156,27 @@ value in `sounds.yml` to mute just that one.
   since that key already existed in your old `sounds.yml`, the auto-merge won't change its
   *value* (it only adds missing keys, never overwrites what you've already got) - either edit
   that one line yourself or delete `sounds.yml` and let it regenerate fresh.
+
+### New: Head Hunt event - INDIA tag (`/coinshop events`)
+- **New tag `[INDIA]`** in the Indian flag colours (saffron `#FF9933` / white / India green
+  `#138808`, in flag order). It's **event-only**: not for sale, and hidden in `/coinshop` ->
+  Tags until a player has earned it. After that it shows up there like any owned tag
+  (click to equip / click to disable).
+- **`/coinshop events`** (admin, `dreamcoinshop.admin`) gives you **25 India flag heads**,
+  numbered #1-#25. Place them anywhere (spawn etc). If your inventory is full the rest drop
+  at your feet.
+- **Players click a placed head** (right or left click) to collect it: *"You found a head!
+  1/25 - find 24 more for the INDIA tag!"*. Finding all 25 unlocks the tag and announces it
+  to the server.
+- **Each head counts once per player.** Clicking it again just says "already found", and a
+  second copy of the same number (e.g. you ran the command twice) counts as the same head.
+- **Progress is saved** in `playerdata/<uuid>.yml` (`headhunt.india`), so leaving at 4/25 and
+  coming back continues from 4/25, restarts included.
+- **Placed heads are protected.** Players can't break them, explosions, pistons and water
+  can't destroy them, and only admins can place them. An admin breaking one in survival gets
+  the same numbered head back, so it can be moved without becoming a "new" head.
+- Config: `head-hunts.india` in `config.yml` (`heads`, `reward-tag`, `head-name`, `texture`).
+  When the event is over, set `enabled: false` and `/coinshop reload` - don't delete the
+  section (it gets re-added on start). Unlocked tags stay unlocked.
+- Messages: `headhunt.*` in `messages.yml`. Sounds: `headhunt-*` in `sounds.yml`. Both merge
+  into your existing files automatically.

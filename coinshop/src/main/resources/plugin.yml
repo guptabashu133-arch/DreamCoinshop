@@ -10,8 +10,8 @@ commands:
     description: Manage the custom Coins currency.
     usage: /coin <balance|give|giveall|remove|set|help>
   coinshop:
-    description: Opens the Coinshop dialog menu. /coinshop reload reloads all configs.
-    usage: /coinshop [reload]
+    description: Opens the Coinshop dialog menu. /coinshop reload reloads all configs, /coinshop events gives head hunt event heads.
+    usage: /coinshop [reload|events [event]]
     aliases: [cs]
   orb:
     description: Manage the custom Orbs currency.
@@ -22,7 +22,7 @@ commands:
 
 permissions:
   dreamcoinshop.admin:
-    description: Allows giving/removing/setting other players' coins/orbs, and /coinshop reload.
+    description: Allows giving/removing/setting other players' coins/orbs, /coinshop reload, and /coinshop events (give/place/break event heads).
     default: op
   # Perk permissions - point these at whatever plugin already provides the actual
   # command (e.g. EssentialsX) by editing the `permission:` field for each perk

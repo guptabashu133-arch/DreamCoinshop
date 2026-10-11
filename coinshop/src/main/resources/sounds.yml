@@ -36,3 +36,8 @@ sounds:
 
   # Orbs - the automatic Orbs-over-time payout
   orb-received:       { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.6, pitch: 1.6 }
+
+  # Head hunt events - finding a head, clicking one you already found, finding the last one
+  headhunt-found:         { sound: "ENTITY_EXPERIENCE_ORB_PICKUP",   volume: 1.0, pitch: 1.4 }
+  headhunt-already-found: { sound: "BLOCK_NOTE_BLOCK_BASS",          volume: 0.7, pitch: 1.0 }
+  headhunt-complete:      { sound: "UI_TOAST_CHALLENGE_COMPLETE",    volume: 1.0, pitch: 1.0 }

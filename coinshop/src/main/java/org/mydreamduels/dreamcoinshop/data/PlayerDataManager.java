@@ -2,10 +2,13 @@ package org.mydreamduels.dreamcoinshop.data;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -42,6 +45,12 @@ public class PlayerDataManager {
         profile.setActiveGlow(yaml.getString("active.glow", null));
         profile.setActiveTag(yaml.getString("active.tag", null));
         profile.setActiveGradient(yaml.getString("active.gradient", null));
+        ConfigurationSection hunts = yaml.getConfigurationSection("headhunt");
+        if (hunts != null) {
+            for (String huntId : hunts.getKeys(false)) {
+                profile.getFoundHuntHeads(huntId).addAll(hunts.getIntegerList(huntId));
+            }
+        }
         return profile;
     }
 
@@ -57,6 +66,10 @@ public class PlayerDataManager {
         yaml.set("active.glow", profile.getActiveGlow());
         yaml.set("active.tag", profile.getActiveTag());
         yaml.set("active.gradient", profile.getActiveGradient());
+        for (Map.Entry<String, Set<Integer>> hunt : profile.getAllFoundHuntHeads().entrySet()) {
+            if (hunt.getValue().isEmpty()) continue;
+            yaml.set("headhunt." + hunt.getKey(), new ArrayList<>(hunt.getValue()));
+        }
         try {
             yaml.save(file);
         } catch (IOException e) {

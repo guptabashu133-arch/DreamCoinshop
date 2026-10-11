@@ -21,7 +21,15 @@ public final class ShopOptions {
     public record GradientOption(String key, String display, String from, String to, double price) {
     }
 
-    public record TagOption(String key, String display, String miniMessage, double price) {
+    /** eventOnly tags are never sold in /coinshop - they're only handed out by an event (see HeadHunt). */
+    public record TagOption(String key, String display, String miniMessage, double price, boolean eventOnly) {
+    }
+
+    /**
+     * A "find the hidden heads" event. Admins get numbered heads (1..heads) via /coinshop events,
+     * place them around the map, and a player who clicks every one of them unlocks rewardTag.
+     */
+    public record HeadHunt(String key, boolean enabled, int heads, String rewardTag, String headName, String texture) {
     }
 
     public record PerkOption(String key, String display, String permission, double price) {

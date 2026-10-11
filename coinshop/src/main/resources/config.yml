@@ -114,6 +114,30 @@ tags:
   angel:   { display: "[ANGEL]",   text: "<bold><gradient:#ffb6c1:#ffd9e6>ANGEL</gradient></bold>",    price: 1000 }
   boss:    { display: "[BOSS]",    text: "<bold><gradient:#ff0000:#8b0000>BOSS</gradient></bold>",     price: 1000 }
   dream:   { display: "[DREAM]",   text: "<bold><gradient:#667eea:#764ba2>DREAM</gradient></bold>",    price: 1000 }
+  # Event-only tag: NOT for sale. It stays hidden in /coinshop -> Tags until the player
+  # finds every head of the "india" head hunt below, then it appears there to equip/disable.
+  # Indian flag colours, in flag order: saffron #FF9933, white, India green #138808.
+  india:   { display: "[INDIA]",   text: "<bold><#FF9933>IN<#FFFFFF>D<#138808>IA</bold>",                price: 0, event-only: true }
+
+# ---------------- Head Hunt events ----------------
+# An admin runs /coinshop events (or /coinshop events <id>) and gets heads numbered
+# 1..heads. Place them anywhere; players click them (right or left) to collect. Each head counts
+# once per player, progress is saved (leave at 4/25, come back, still 4/25), and finding
+# all of them unlocks reward-tag (a tag key from tags: above) in /coinshop -> Tags.
+#
+# Event over? Set enabled: false (don't delete the section - it would be re-added on the
+# next start). Clicking a head then just says the event is over; unlocked tags stay.
+#
+# texture: the head's texture hash (minecraft-heads.com "Minecraft-URL" / textures.minecraft.net
+# id), the full textures.minecraft.net URL, or a base64 "Value" - any of the three work.
+head-hunts:
+  india:
+    enabled: true
+    heads: 25
+    reward-tag: india
+    head-name: "<bold><#FF9933>IN<#FFFFFF>D<#138808>IA</bold> <white>Event Head"
+    # "India" flag head (Flags - Asia) from the public-domain heads database
+    texture: "2f89e46f1d5454c967676efb4977a84a18d0084326c76c7bfc4e7843bb1a901"
 
 # ---------------- Name Gradients ----------------
 # applies to the player's name in chat + tab list

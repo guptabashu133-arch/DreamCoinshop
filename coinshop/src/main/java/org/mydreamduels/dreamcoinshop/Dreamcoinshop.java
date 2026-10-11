@@ -30,6 +30,7 @@ import org.mydreamduels.dreamcoinshop.data.PlayerDataManager;
 import org.mydreamduels.dreamcoinshop.data.PlayerProfile;
 import org.mydreamduels.dreamcoinshop.economy.CoinsManager;
 import org.mydreamduels.dreamcoinshop.economy.OrbsManager;
+import org.mydreamduels.dreamcoinshop.events.HeadHuntManager;
 import org.mydreamduels.dreamcoinshop.gui.CoinShopGUI;
 import org.mydreamduels.dreamcoinshop.listeners.ChatFormatListener;
 import org.mydreamduels.dreamcoinshop.listeners.PlayerJoinListener;
@@ -47,6 +48,7 @@ public final class Dreamcoinshop extends JavaPlugin {
     private CoinShopGUI coinShopGUI;
     private MessagesConfig messages;
     private SoundConfig sounds;
+    private HeadHuntManager headHuntManager;
     private final Map<UUID, PermissionAttachment> perkAttachments = new ConcurrentHashMap<>();
     private static final List<ChatColor> RAINBOW_CYCLE = List.of(ChatColor.RED, ChatColor.GOLD, ChatColor.YELLOW, ChatColor.GREEN, ChatColor.AQUA, ChatColor.BLUE, ChatColor.LIGHT_PURPLE);
     private final AtomicInteger rainbowIndex = new AtomicInteger(0);
@@ -59,10 +61,14 @@ public final class Dreamcoinshop extends JavaPlugin {
         this.getServer().getPluginManager().registerEvents((Listener) new PlayerJoinListener(this), (Plugin) this);
         this.getServer().getPluginManager().registerEvents((Listener) new ChatFormatListener(this), (Plugin) this);
         this.getServer().getPluginManager().registerEvents((Listener) new SellwandListener(this), (Plugin) this);
+        this.headHuntManager = new HeadHuntManager(this);
+        this.getServer().getPluginManager().registerEvents((Listener) this.headHuntManager, (Plugin) this);
         CoinCommand coinCommand = new CoinCommand(this);
         this.getCommand("coin").setExecutor((CommandExecutor) coinCommand);
         this.getCommand("coin").setTabCompleter((TabCompleter) coinCommand);
-        this.getCommand("coinshop").setExecutor((CommandExecutor) new CoinShopCommand(this));
+        CoinShopCommand coinShopCommand = new CoinShopCommand(this);
+        this.getCommand("coinshop").setExecutor((CommandExecutor) coinShopCommand);
+        this.getCommand("coinshop").setTabCompleter((TabCompleter) coinShopCommand);
         OrbCommand orbCommand = new OrbCommand(this);
         this.getCommand("orb").setExecutor((CommandExecutor) orbCommand);
         this.getCommand("orb").setTabCompleter((TabCompleter) orbCommand);
@@ -292,5 +298,9 @@ public final class Dreamcoinshop extends JavaPlugin {
 
     public SoundConfig getSounds() {
         return this.sounds;
+    }
+
+    public HeadHuntManager getHeadHuntManager() {
+        return this.headHuntManager;
     }
 }

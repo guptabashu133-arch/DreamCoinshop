@@ -1,7 +1,10 @@
 package org.mydreamduels.dreamcoinshop.data;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 public class PlayerProfile {
@@ -11,6 +14,8 @@ public class PlayerProfile {
     private final Set<String> unlockedPerks = new LinkedHashSet<>();
     private final Set<String> unlockedTags = new LinkedHashSet<>();
     private final Set<String> unlockedGradients = new LinkedHashSet<>();
+    /** head hunt id -> head numbers this player has already claimed (each one only ever counts once) */
+    private final Map<String, Set<Integer>> foundHuntHeads = new HashMap<>();
     private String activeChatColor;
     private String activeGlow;
     private String activeTag;
@@ -43,6 +48,14 @@ public class PlayerProfile {
 
     public Set<String> getUnlockedGradients() {
         return this.unlockedGradients;
+    }
+
+    public Set<Integer> getFoundHuntHeads(String huntId) {
+        return this.foundHuntHeads.computeIfAbsent(huntId, k -> new TreeSet<>());
+    }
+
+    public Map<String, Set<Integer>> getAllFoundHuntHeads() {
+        return this.foundHuntHeads;
     }
 
     public String getActiveChatColor() {
