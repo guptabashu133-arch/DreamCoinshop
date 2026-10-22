@@ -1,296 +1,321 @@
 package org.mydreamduels.dreamcoinshop;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.ChatColor;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.TabCompleter;
+import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
-import org.mydreamduels.dreamcoinshop.commands.CoinCommand;
-import org.mydreamduels.dreamcoinshop.commands.CoinShopCommand;
-import org.mydreamduels.dreamcoinshop.commands.OrbCommand;
-import org.mydreamduels.dreamcoinshop.commands.OrbShopCommand;
-import org.mydreamduels.dreamcoinshop.config.MessagesConfig;
-import org.mydreamduels.dreamcoinshop.config.SoundConfig;
-import org.mydreamduels.dreamcoinshop.data.PlayerDataManager;
-import org.mydreamduels.dreamcoinshop.data.PlayerProfile;
-import org.mydreamduels.dreamcoinshop.economy.CoinsManager;
-import org.mydreamduels.dreamcoinshop.economy.OrbsManager;
-import org.mydreamduels.dreamcoinshop.gui.CoinShopGUI;
-import org.mydreamduels.dreamcoinshop.listeners.ChatFormatListener;
-import org.mydreamduels.dreamcoinshop.listeners.PlayerJoinListener;
-import org.mydreamduels.dreamcoinshop.listeners.SellwandListener;
-import org.mydreamduels.dreamcoinshop.placeholder.DreamcoinshopExpansion;
-import org.mydreamduels.dreamcoinshop.shopdata.ShopConfig;
-import org.mydreamduels.dreamcoinshop.shopdata.ShopOptions;
 
-public final class Dreamcoinshop extends JavaPlugin {
-    private static final MiniMessage MM = MiniMessage.miniMessage();
-    private ShopConfig shopConfig;
-    private CoinsManager coinsManager;
-    private OrbsManager orbsManager;
-    private PlayerDataManager playerDataManager;
-    private CoinShopGUI coinShopGUI;
-    private MessagesConfig messages;
-    private SoundConfig sounds;
-    private final Map<UUID, PermissionAttachment> perkAttachments = new ConcurrentHashMap<>();
-    private static final List<ChatColor> RAINBOW_CYCLE = List.of(ChatColor.RED, ChatColor.GOLD, ChatColor.YELLOW, ChatColor.GREEN, ChatColor.AQUA, ChatColor.BLUE, ChatColor.LIGHT_PURPLE);
-    private final AtomicInteger rainbowIndex = new AtomicInteger(0);
-    private static final Map<String, ChatColor> GLOW_COLOR_MAP = Map.of("red", ChatColor.RED, "gold", ChatColor.GOLD, "green", ChatColor.GREEN, "aqua", ChatColor.AQUA, "blue", ChatColor.BLUE, "purple", ChatColor.DARK_PURPLE, "white", ChatColor.WHITE);
-    private BukkitTask orbTask;
-    private BukkitTask glowSafetyTask;
+import java.io.File;
+import java.sql.Driver;
+import java.sql.SQLException;
+import java.util.Properties;
 
+/**
+ * Dreamcoinshop: a cosmetics shop (chat colours, glows, tags, name gradients, country flags,
+ * perks, sellwands) paid with Coins, plus an Orbs shop. Runs on Spigot, Paper, Purpur and Folia,
+ * 1.20 to 26.x: dialog menus on Paper 1.21.6+, chest menus everywhere else.
+ */
+public class Dreamcoinshop extends JavaPlugin implements Listener {
+
+    private Platform platform;
+    private BedrockDetector bedrock;
+    private volatile ShopConfig config;
+    private Text text;
+    private Sounds sounds;
+    private Flags flags;
+    private DataManager data;
+    private Cosmetics cosmetics;
+    private Shop shop;
+    private Settings settings;
+    private Menus menus;
+    private PaperChat paperChat;
+    private LegacyChat legacyChat;
+    private org.bukkit.event.EventPriority chatPriority;
+    private Platform.Task orbTask;
+    private int orbInterval = -1;
+    private DreamLicense license;
+
+    @Override
     public void onEnable() {
-        this.loadEverything();
-        this.getServer().getPluginManager().registerEvents((Listener) new PlayerJoinListener(this), (Plugin) this);
-        this.getServer().getPluginManager().registerEvents((Listener) new ChatFormatListener(this), (Plugin) this);
-        this.getServer().getPluginManager().registerEvents((Listener) new SellwandListener(this), (Plugin) this);
-        CoinCommand coinCommand = new CoinCommand(this);
-        this.getCommand("coin").setExecutor((CommandExecutor) coinCommand);
-        this.getCommand("coin").setTabCompleter((TabCompleter) coinCommand);
-        this.getCommand("coinshop").setExecutor((CommandExecutor) new CoinShopCommand(this));
-        OrbCommand orbCommand = new OrbCommand(this);
-        this.getCommand("orb").setExecutor((CommandExecutor) orbCommand);
-        this.getCommand("orb").setTabCompleter((TabCompleter) orbCommand);
-        this.getCommand("orbshop").setExecutor((CommandExecutor) new OrbShopCommand(this));
-        this.getServer().getScheduler().runTaskTimer((Plugin) this, this::tickRainbowGlow, 20L, 20L);
-        this.glowSafetyTask = this.getServer().getScheduler().runTaskTimer((Plugin) this, this::reapplyGlowForOnlinePlayers, 100L, 100L);
-        this.startOrbTimer();
-        if (this.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new DreamcoinshopExpansion(this).register();
-            this.getLogger().info("Hooked into PlaceholderAPI - %dreamcoinshop_coins% / %dreamcoinshop_orbs% / %dreamcoinshop_gradient_name% are available.");
+        platform = Platform.create(this);
+        bedrock = new BedrockDetector(getLogger());
+        ShopConfig cfg = new ShopConfig();
+        cfg.load(this);
+        config = cfg;
+        text = Capabilities.ADVENTURE ? new AdventureText(this, platform) : new LegacyText(this, platform);
+        sounds = new Sounds(this, platform);
+        sounds.reload();
+        flags = Flags.load();
+        cosmetics = new Cosmetics(this, platform);
+        shop = new Shop(this, platform);
+        settings = new Settings(this, platform);
+
+        data = new DataManager(this, platform, cfg.storage.serverName());
+        data.topRefreshSeconds(cfg.topRefreshSeconds);
+        data.onReloaded(this::applyLoaded);
+        getServer().getPluginManager().registerEvents(data, this);
+        getServer().getPluginManager().registerEvents(bedrock, this);
+        data.start(createStorage(cfg.storage), !cfg.storage.type().equals("SQLITE"), cfg.storage.pollMs());
+
+        menus = new Menus(this, platform);
+        getServer().getPluginManager().registerEvents(menus, this);
+        getServer().getPluginManager().registerEvents(new SellwandListener(this), this);
+        getServer().getPluginManager().registerEvents(this, this);
+        registerChat();
+        cosmetics.start();
+
+        ShopCommand shopCommand = new ShopCommand(this);
+        command("coinshop", shopCommand);
+        command("orbshop", shopCommand);
+        command("coin", new CurrencyCommand(this, Currency.COINS));
+        command("orb", new CurrencyCommand(this, Currency.ORBS));
+
+        startOrbTimer();
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            try {
+                new Placeholders(this).register();
+            } catch (Throwable t) {
+                getLogger().warning("Could not hook into PlaceholderAPI: " + t);
+            }
         }
-        this.getLogger().info("Dreamcoinshop enabled - coinshop dialog GUI ready.");
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            Profile prof = data.profile(p);
+            if (prof.isLoaded()) applyLoaded(prof);
+        }
+
+        String menusInfo = Capabilities.DIALOGS ? "dialogs + chest menu" : "chest menu";
+        String storageInfo = data.isReady() ? "§a" + data.storageName() + (data.isShared() ? " §7(shared, cross-server sync)" : "")
+                : "§c" + data.storageName() + " (can't connect - see above)";
+        Banner.print(this, menusInfo, storageInfo);
+        license = DreamLicense.start(this);
     }
 
+    @Override
     public void onDisable() {
-        if (this.playerDataManager != null) {
-            this.playerDataManager.saveAll();
+        if (license != null) license.stop();
+        if (orbTask != null) orbTask.cancel();
+        if (menus != null) menus.closeAll();
+        if (cosmetics != null) {
+            cosmetics.stop();
+            cosmetics.clearAll();
         }
-        // MUST happen: balance changes now sit in memory between flushes, so without this a
-        // normal restart would drop everything since the last timer tick. shutdown() cancels
-        // the async task and then writes synchronously, so the file is complete before the
-        // server finishes stopping.
-        if (this.coinsManager != null) {
-            this.coinsManager.shutdown();
-        }
-        if (this.orbsManager != null) {
-            this.orbsManager.shutdown();
-        }
+        if (data != null) data.stop();
     }
 
-    private void loadEverything() {
-        this.shopConfig = new ShopConfig();
-        this.shopConfig.load(this);
-        this.messages = new MessagesConfig(this);
-        this.messages.load();
-        this.sounds = new SoundConfig(this);
-        this.sounds.load(this.shopConfig.isSoundsEnabled());
-        if (this.coinsManager == null) {
-            this.coinsManager = new CoinsManager(this);
-        }
-        if (this.orbsManager == null) {
-            this.orbsManager = new OrbsManager(this);
-        }
-        if (this.playerDataManager == null) {
-            this.playerDataManager = new PlayerDataManager(this);
-        }
-        // Balances are written on a timer off the main thread now, not on every change.
-        // Restarted here (not only on first load) so /dcs reload picks up a changed interval.
-        long saveInterval = this.shopConfig.getBalanceSaveIntervalSeconds();
-        this.coinsManager.startAutoSave(saveInterval);
-        this.orbsManager.startAutoSave(saveInterval);
-        this.coinShopGUI = new CoinShopGUI(this);
+    private void command(String name, TabExecutor executor) {
+        PluginCommand cmd = getCommand(name);
+        if (cmd == null) return;
+        cmd.setExecutor(executor);
+        cmd.setTabCompleter(executor);
     }
 
-    public void reloadEverything() {
-        this.loadEverything();
-        this.startOrbTimer();
-        for (Player p : this.getServer().getOnlinePlayers()) {
-            this.applyPerkPermissions(p);
-            this.refreshCosmetics(p);
+    // ------------------------------------------------------------------ storage
+
+    private Storage createStorage(ShopConfig.Storage s) {
+        String type = s.type();
+        String prefix = s.prefix();
+        try {
+            switch (type) {
+                case "MYSQL", "MARIADB" -> {
+                    return new SqlStorage(SqlStorage.Dialect.MYSQL, () -> openMariaDb(s), prefix);
+                }
+                case "POSTGRESQL", "POSTGRES", "PGSQL" -> {
+                    return new SqlStorage(SqlStorage.Dialect.POSTGRESQL, () -> openPostgres(s), prefix);
+                }
+                case "REDIS" -> {
+                    return new RedisStorage(s.host(), s.port(), s.ssl(), s.redisUsername(), s.password(), s.redisDatabase(), prefix, getLogger());
+                }
+                case "SQLITE" -> {
+                    return sqlite(prefix);
+                }
+                default -> getLogger().warning("storage.type '" + type + "' is unknown - using SQLITE.");
+            }
+        } catch (IllegalArgumentException e) {
+            getLogger().severe("storage: " + e.getMessage() + " - using SQLite with the prefix dcs_ instead.");
+            return sqlite("dcs_");
         }
+        return sqlite(prefix.matches("[A-Za-z0-9_]{0,24}") ? prefix : "dcs_");
     }
+
+    private Storage sqlite(String prefix) {
+        File file = new File(getDataFolder(), "data.db");
+        return new SqlStorage(SqlStorage.Dialect.SQLITE, () -> {
+            getDataFolder().mkdirs();
+            try {
+                // Every Spigot / Paper / Folia server ships the SQLite driver
+                Driver driver = (Driver) Class.forName("org.sqlite.JDBC").getDeclaredConstructor().newInstance();
+                java.sql.Connection c = driver.connect("jdbc:sqlite:" + file.getAbsolutePath(), new Properties());
+                if (c == null) throw new SQLException("SQLite refused " + file);
+                return c;
+            } catch (ReflectiveOperationException e) {
+                throw new SQLException("This server has no SQLite driver - use MYSQL, POSTGRESQL or REDIS in storage.type", e);
+            }
+        }, prefix);
+    }
+
+    /** The bundled drivers are used directly (not DriverManager), so other plugins' drivers can't interfere. */
+    private static java.sql.Connection openMariaDb(ShopConfig.Storage s) throws SQLException {
+        Properties props = new Properties();
+        props.setProperty("user", s.username());
+        props.setProperty("password", s.password());
+        props.setProperty("sslMode", s.ssl() ? "trust" : "disable");
+        props.setProperty("allowPublicKeyRetrieval", "true");
+        props.setProperty("connectTimeout", "5000");
+        props.setProperty("socketTimeout", "10000");
+        // The MariaDB driver talks to MySQL and MariaDB alike
+        java.sql.Connection c = new org.mariadb.jdbc.Driver().connect("jdbc:mariadb://" + s.host() + ":" + s.port() + "/" + s.database(), props);
+        if (c == null) throw new SQLException("The MariaDB driver refused the connection URL");
+        return c;
+    }
+
+    private static java.sql.Connection openPostgres(ShopConfig.Storage s) throws SQLException {
+        Properties props = new Properties();
+        props.setProperty("user", s.username());
+        props.setProperty("password", s.password());
+        props.setProperty("sslmode", s.ssl() ? "require" : "disable");
+        props.setProperty("connectTimeout", "5");
+        props.setProperty("socketTimeout", "10");
+        java.sql.Connection c = new org.postgresql.Driver().connect("jdbc:postgresql://" + s.host() + ":" + s.port() + "/" + s.database(), props);
+        if (c == null) throw new SQLException("The PostgreSQL driver refused the connection URL");
+        return c;
+    }
+
+    // ------------------------------------------------------------------ players
+
+    /** After a player's data loaded (or changed on another server): show their cosmetics. Any thread. */
+    private void applyLoaded(Profile profile) {
+        Player player = Bukkit.getPlayer(profile.uuid);
+        if (player == null) return;
+        cosmetics.refresh(player);
+        cosmetics.applyPerks(player);
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        Profile profile = data.profile(player);
+        if (profile.isLoaded()) applyLoaded(profile);
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onQuit(PlayerQuitEvent event) {
+        cosmetics.clear(event.getPlayer());
+    }
+
+    // ------------------------------------------------------------------ timers
 
     private void startOrbTimer() {
-        if (this.orbTask != null) {
-            this.orbTask.cancel();
-        }
-        long intervalTicks = (long) Math.max(1, this.shopConfig.getOrbIntervalMinutes()) * 60L * 20L;
-        this.orbTask = this.getServer().getScheduler().runTaskTimer((Plugin) this, this::giveOrbsToOnlinePlayers, intervalTicks, intervalTicks);
+        ShopConfig cfg = config;
+        if (orbTask != null && orbInterval == cfg.orbIntervalMinutes) return;
+        if (orbTask != null) orbTask.cancel();
+        orbInterval = cfg.orbIntervalMinutes;
+        long ticks = Math.max(1, cfg.orbIntervalMinutes) * 60L * 20L;
+        orbTask = platform.timer(this::payOrbs, ticks, ticks);
     }
 
-    private void giveOrbsToOnlinePlayers() {
-        double amount = this.shopConfig.getOrbAmountPerInterval();
-        for (Player p : this.getServer().getOnlinePlayers()) {
-            this.orbsManager.add(p.getUniqueId(), amount);
-            p.sendMessage(this.messages.get("orbs.received", MessagesConfig.ph("amount", (long) amount)));
-            this.sounds.play(p, "orb-received");
-        }
-    }
-
-    private void tickRainbowGlow() {
-        int idx = this.rainbowIndex.updateAndGet(i -> (i + 1) % RAINBOW_CYCLE.size());
-        ChatColor color = RAINBOW_CYCLE.get(idx);
-        for (Player player : this.getServer().getOnlinePlayers()) {
-            PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
-            ShopOptions.GlowOption opt = this.shopConfig.getGlows().get(profile.getActiveGlow());
-            if (opt == null || !opt.rainbow()) continue;
-            Scoreboard board = player.getScoreboard();
-            Team team = board.getTeam("dcs_glow_rainbow");
-            if (team == null) {
-                team = board.registerNewTeam("dcs_glow_rainbow");
-            }
-            team.setColor(color);
-            if (team.hasEntry(player.getName())) continue;
-            team.addEntry(player.getName());
-        }
-    }
-
-    private void reapplyGlowForOnlinePlayers() {
-        for (Player player : this.getServer().getOnlinePlayers()) {
-            PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
-            if (profile.getActiveGlow() == null) continue;
-            this.refreshGlow(player, profile);
-        }
-    }
-
-    public ChatColor nextRainbowColor() {
-        return RAINBOW_CYCLE.get(this.rainbowIndex.get());
-    }
-
-    public void applyPerkPermissions(Player player) {
-        PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
-        PermissionAttachment attachment = this.perkAttachments.computeIfAbsent(player.getUniqueId(), uuid -> player.addAttachment((Plugin) this));
-        this.shopConfig.getPerks().values().forEach(perk -> {
-            boolean owned = profile.getUnlockedPerks().contains(perk.key());
-            attachment.setPermission(perk.permission(), owned);
-        });
-    }
-
-    public void clearPerkAttachment(Player player) {
-        PermissionAttachment attachment = this.perkAttachments.remove(player.getUniqueId());
-        if (attachment != null) {
-            try {
-                player.removeAttachment(attachment);
-            } catch (IllegalArgumentException ignored) {
+    private void payOrbs() {
+        ShopConfig cfg = config;
+        if (!cfg.orbPayout || cfg.orbAmount <= 0) return;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            Profile profile = data.online(p.getUniqueId());
+            if (profile == null || !profile.isLoaded()) continue;
+            data.add(profile, Currency.ORBS, cfg.orbAmount);
+            if (cfg.orbMessage) {
+                text.send(p, "orbs.received", Ph.of("amount", Shop.format(cfg.orbAmount)));
+                sounds.play(p, "orb-received");
             }
         }
     }
 
-    public void refreshCosmetics(Player player) {
-        PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
-        if (profile.getActiveGradient() != null) {
-            Component name = this.getGradientNameComponent(player);
-            player.displayName(name);
-            player.playerListName(name);
-        } else {
-            player.displayName(Component.text(player.getName()));
-            player.playerListName(Component.text(player.getName()));
+    private void registerChat() {
+        ShopConfig cfg = config;
+        if (chatPriority == cfg.chatPriority && (paperChat != null || legacyChat != null)) return;
+        if (paperChat != null) paperChat.unregister();
+        if (legacyChat != null) legacyChat.unregister();
+        paperChat = null;
+        legacyChat = null;
+        chatPriority = cfg.chatPriority;
+        if (Capabilities.PAPER_CHAT) paperChat = PaperChat.register(this, chatPriority);
+        else legacyChat = LegacyChat.register(this, chatPriority);
+    }
+
+    // ------------------------------------------------------------------ reload
+
+    /** Re-reads config.yml, messages.yml and sounds.yml and applies them. Main/global thread. */
+    void reloadSettings() {
+        ShopConfig old = config;
+        ShopConfig cfg = new ShopConfig();
+        cfg.load(this);
+        config = cfg;
+        text.reload();
+        sounds.reload();
+        data.topRefreshSeconds(cfg.topRefreshSeconds);
+        if (old.topSize != cfg.topSize) data.invalidateTops();
+        registerChat();
+        startOrbTimer();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            Profile prof = data.online(p.getUniqueId());
+            if (prof != null && prof.isLoaded()) applyLoaded(prof);
         }
-        this.refreshGlow(player, profile);
     }
 
-    /**
-     * NEW: builds the player's cosmetic name straight from player.getName()
-     * (the real Mojang username) plus their currently active gradient -
-     * never from player.displayName(). displayName() is a shared, mutable
-     * field that any other plugin can silently overwrite (EssentialsX does
-     * this for /nick nicknames, and paints it red for ops via
-     * ops-name-color). This is now the single source of truth for chat
-     * (ChatFormatListener) and, via the dreamcoinshop_gradient_name
-     * PlaceholderAPI placeholder, for Dreamtab's tab list too - both bypass
-     * displayName() entirely.
-     */
-    public Component getGradientNameComponent(Player player) {
-        PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
-        if (profile.getActiveGradient() != null) {
-            ShopOptions.GradientOption opt = this.shopConfig.getNameGradients().get(profile.getActiveGradient());
-            if (opt != null) {
-                String tag = "<gradient:" + opt.from() + ":" + opt.to() + ">" + player.getName() + "</gradient>";
-                return MM.deserialize(tag);
-            }
-        }
-        return Component.text(player.getName());
+    /** /coinshop reload. True if the storage settings changed (those need a restart). */
+    boolean reloadAll() {
+        ShopConfig.Storage before = config.storage;
+        menus.closeAll();
+        reloadSettings();
+        return !before.equals(config.storage);
     }
 
-    /** Same as above but as a raw MiniMessage tag string, for PlaceholderAPI. */
-    public String getGradientNameTag(Player player) {
-        PlayerProfile profile = this.playerDataManager.get(player.getUniqueId());
-        if (profile.getActiveGradient() != null) {
-            ShopOptions.GradientOption opt = this.shopConfig.getNameGradients().get(profile.getActiveGradient());
-            if (opt != null) {
-                return "<gradient:" + opt.from() + ":" + opt.to() + ">" + player.getName() + "</gradient>";
-            }
-        }
-        return player.getName();
+    // ------------------------------------------------------------------ access
+
+    ShopConfig config() {
+        return config;
     }
 
-    private void refreshGlow(Player player, PlayerProfile profile) {
-        Scoreboard board = player.getScoreboard();
-        for (Team team : board.getTeams()) {
-            if (!team.getName().startsWith("dcs_glow_")) continue;
-            team.removeEntry(player.getName());
-        }
-        if (profile.getActiveGlow() == null) {
-            player.removePotionEffect(PotionEffectType.GLOWING);
-            return;
-        }
-        ShopOptions.GlowOption opt = this.shopConfig.getGlows().get(profile.getActiveGlow());
-        if (opt == null) {
-            player.removePotionEffect(PotionEffectType.GLOWING);
-            return;
-        }
-        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false, false));
-        ChatColor color = opt.rainbow() ? this.nextRainbowColor() : GLOW_COLOR_MAP.getOrDefault(opt.key(), ChatColor.WHITE);
-        String teamName = "dcs_glow_" + (opt.rainbow() ? "rainbow" : opt.key());
-        Team team = board.getTeam(teamName);
-        if (team == null) {
-            team = board.registerNewTeam(teamName);
-        }
-        team.setColor(color);
-        team.addEntry(player.getName());
+    Text text() {
+        return text;
     }
 
-    public ShopConfig getShopConfig() {
-        return this.shopConfig;
+    Sounds sounds() {
+        return sounds;
     }
 
-    public CoinsManager getCoinsManager() {
-        return this.coinsManager;
+    Flags flags() {
+        return flags;
     }
 
-    public OrbsManager getOrbsManager() {
-        return this.orbsManager;
+    DataManager data() {
+        return data;
     }
 
-    public PlayerDataManager getPlayerDataManager() {
-        return this.playerDataManager;
+    Cosmetics cosmetics() {
+        return cosmetics;
     }
 
-    public CoinShopGUI getCoinShopGUI() {
-        return this.coinShopGUI;
+    Shop shop() {
+        return shop;
     }
 
-    public MessagesConfig getMessages() {
-        return this.messages;
+    Settings settings() {
+        return settings;
     }
 
-    public SoundConfig getSounds() {
-        return this.sounds;
+    Menus menus() {
+        return menus;
+    }
+
+    BedrockDetector bedrock() {
+        return bedrock;
+    }
+
+    Platform platform() {
+        return platform;
     }
 }

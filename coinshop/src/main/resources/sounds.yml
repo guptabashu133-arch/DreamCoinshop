@@ -1,38 +1,41 @@
 # ================================================
 #   Dreamcoinshop - sounds.yml
-#   Sound played for every action in the plugin. Set settings.sounds-enabled
-#   to false in config.yml to mute all of these without editing this file.
+#   The sound played for each action.
 #
-#   sound  = any org.bukkit.Sound enum name (e.g. UI_BUTTON_CLICK)
+#   sound  = a sound name, e.g. ENTITY_PLAYER_LEVELUP ("" or NONE = no sound)
 #   volume = 0.0 - 1.0+ (1.0 is normal volume)
 #   pitch  = 0.5 - 2.0 (1.0 is normal pitch)
 #
-#   Set a sound's value to "" (empty) to disable just that one sound.
-#
-#   NOTE: Minecraft's own client already plays a click sound for every dialog
-#   button press, so there are deliberately NO sounds here for plain menu
-#   navigation (opening a menu, clicking Back) - adding one would just double
-#   up with that native click and sound like two clicks at once. Only actions
-#   the client doesn't already give feedback for (buying, equipping, selling,
-#   etc) have a sound below.
+#   There are deliberately NO sounds for plain menu clicks (opening a menu,
+#   Back): Minecraft already plays its own click for every dialog button, and a
+#   second one sounds like a double click.
 # ================================================
 
+# Turn every sound of this plugin on or off (also in /coinshop settings).
+enabled: true
+
 sounds:
-  # Buying a cosmetic / perk / wand for the first time
+  # Buying something
   purchase-success:  { sound: "ENTITY_PLAYER_LEVELUP",        volume: 0.7, pitch: 1.4 }
-  purchase-fail:      { sound: "ENTITY_VILLAGER_NO",           volume: 1.0, pitch: 1.0 }
+  purchase-fail:     { sound: "ENTITY_VILLAGER_NO",           volume: 1.0, pitch: 1.0 }
 
-  # Clicking an already-owned cosmetic to turn it on/off
-  equip:              { sound: "ITEM_ARMOR_EQUIP_GENERIC",     volume: 1.0, pitch: 1.2 }
-  unequip:            { sound: "BLOCK_LEVER_CLICK",            volume: 1.0, pitch: 0.8 }
+  # Clicking something you own to turn it on/off
+  equip:             { sound: "ITEM_ARMOR_EQUIP_GENERIC",     volume: 1.0, pitch: 1.2 }
+  unequip:           { sound: "BLOCK_LEVER_CLICK",            volume: 1.0, pitch: 0.8 }
 
-  # Sellwand / spawner sellwand
-  sellwand-sell:      { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.0 }
-  sellwand-empty:     { sound: "ENTITY_VILLAGER_NO",           volume: 1.0, pitch: 1.0 }
-  sellwand-break:     { sound: "ENTITY_ITEM_BREAK",            volume: 1.0, pitch: 1.0 }
+  # Sellwand
+  sellwand-sell:     { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.0 }
+  sellwand-empty:    { sound: "ENTITY_VILLAGER_NO",           volume: 1.0, pitch: 1.0 }
+  sellwand-break:    { sound: "ENTITY_ITEM_BREAK",            volume: 1.0, pitch: 1.0 }
 
-  # Buy Coins dialog - clicking "Visit Store"
-  buycoins-select:    { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.2 }
+  # Buy Coins - clicking "Visit Store"
+  buycoins-select:   { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.2 }
 
-  # Orbs - the automatic Orbs-over-time payout
-  orb-received:       { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.6, pitch: 1.6 }
+  # The automatic Orbs payout
+  orb-received:      { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.6, pitch: 1.6 }
+
+  # Settings menu: a setting was saved
+  settings-saved:    { sound: "BLOCK_NOTE_BLOCK_PLING",       volume: 0.8, pitch: 1.6 }
+
+  # Chest menu only (dialogs already click by themselves)
+  gui-click:         { sound: "UI_BUTTON_CLICK",              volume: 0.4, pitch: 1.0 }

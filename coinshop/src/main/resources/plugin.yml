@@ -1,40 +1,51 @@
 name: Dreamcoinshop
-version: '1.0.0'
+version: '2.0.0'
 main: org.mydreamduels.dreamcoinshop.Dreamcoinshop
-api-version: '1.21'
-author: YourName
-softdepend: [PlaceholderAPI]
+api-version: '1.20'
+folia-supported: true
+author: BasuGamer56
+website: https://dreamscube.fun
+description: Cosmetics coin shop with dialog and chest GUI menus, country flags, perks, sellwands, Orbs and cross-server database sync
+softdepend: [PlaceholderAPI, floodgate, Geyser-Spigot, ViaVersion]
 
 commands:
-  coin:
-    description: Manage the custom Coins currency.
-    usage: /coin <balance|give|giveall|remove|set|help>
   coinshop:
-    description: Opens the Coinshop dialog menu. /coinshop reload reloads all configs.
-    usage: /coinshop [reload]
+    description: Opens the Coinshop. /coinshop settings, reload, gui, dialog for admins.
+    usage: /coinshop [settings|reload|gui|dialog]
     aliases: [cs]
+  coin:
+    description: Coins balance, and admin commands to change it.
+    usage: /coin <balance|give|giveall|remove|set|help>
   orb:
-    description: Manage the custom Orbs currency.
+    description: Orbs balance, and admin commands to change it.
     usage: /orb <balance|give|giveall|remove|set|help>
   orbshop:
-    description: Opens the Orbshop dialog menu (spend Orbs on spawners).
+    description: Opens the Orbshop.
     usage: /orbshop
 
 permissions:
+  dreamcoinshop.use:
+    description: Open /coinshop and /orbshop and buy things.
+    default: true
   dreamcoinshop.admin:
-    description: Allows giving/removing/setting other players' coins/orbs, and /coinshop reload.
+    description: Give, remove and set Coins/Orbs, /coinshop reload, and the Settings menu.
     default: op
-  # Perk permissions - point these at whatever plugin already provides the actual
-  # command (e.g. EssentialsX) by editing the `permission:` field for each perk
-  # in config.yml. /smithingtable, /craft, /trash, /anvil, /enderchest, /hat,
-  # /crawl, /spin, /layback were removed from the shop on request.
-  dreamcoinshop.perk.workbench:
+    children:
+      dreamcoinshop.settings: true
+  dreamcoinshop.settings:
+    description: Change the plugin settings and prices from /coinshop -> Settings.
+    default: op
+  # Perk permissions: point these at whatever plugin provides the actual command
+  # (e.g. EssentialsX) with the `permission:` field of each perk in config.yml.
+  dreamcoinshop.perk.craft:
     default: false
-  dreamcoinshop.perk.repair:
+  dreamcoinshop.perk.smithingtable:
     default: false
-  dreamcoinshop.perk.heal:
+  dreamcoinshop.perk.grindstone:
     default: false
-  dreamcoinshop.perk.feed:
+  dreamcoinshop.perk.anvil:
     default: false
-  dreamcoinshop.perk.kit:
+  dreamcoinshop.perk.enderchest:
+    default: false
+  dreamcoinshop.perk.nick:
     default: false

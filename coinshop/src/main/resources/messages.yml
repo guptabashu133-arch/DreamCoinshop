@@ -1,21 +1,23 @@
 # ================================================
 #   Dreamcoinshop - messages.yml
-#   Every player-facing message the plugin sends lives here.
-#   MiniMessage formatting is supported (<red>, <gradient:...>, <bold>, etc).
-#   Placeholders are written as <placeholder> and are listed above each line.
-#
-#   Style pattern used throughout: the whole line is wrapped in
-#   <shadow:black>...</shadow> for a bit of depth/pop, plain body text stays
-#   white/gray, and the important keyword (coins, orbs, a player name, an
-#   item name) gets its own colour + <bold> so it jumps out at a glance.
+#   Every message and menu text. MiniMessage formatting (<red>, <gradient:...>,
+#   <bold>, <#FF9933> ...). Placeholders look like <player> and are listed above
+#   each line. Leave a chat message empty ("") to not send it at all.
+#   New keys are added to this file automatically after an update.
 # ================================================
 
 general:
   player-only: "<shadow:black><red>Only players can do that.</red></shadow>"
   not-online: "<shadow:black><red>That player is not online.</red></shadow>"
+  # <player>
+  unknown-player: "<shadow:black><red>No player called <white><player></white> has played here.</red></shadow>"
   no-permission: "<shadow:black><red>You don't have permission to do that.</red></shadow>"
   invalid-amount: "<shadow:black><red>That's not a valid amount.</red></shadow>"
   amount-must-be-positive: "<shadow:black><red>Amount must be positive.</red></shadow>"
+  reloaded: "<shadow:black><green>Dreamcoinshop reloaded (config.yml, messages.yml, sounds.yml).</green></shadow>"
+  reload-storage: "<shadow:black><yellow>The storage settings changed - restart the server to use the new database.</yellow></shadow>"
+  database-down: "<shadow:black><red>The shop is closed: the database can't be reached. Tell an admin.</red></shadow>"
+  no-dialogs: "<shadow:black><yellow>Dialog menus need Paper 1.21.6+ and a 1.21.6+ client - opening the chest menu.</yellow></shadow>"
 
 # /coin ...
 coin:
@@ -36,18 +38,22 @@ coin:
   set: "<shadow:black><green>Set <aqua><player></aqua>'s balance to <gold><bold><amount> coins</bold></gold></green></shadow>"
   help-header: "<shadow:black><gold><bold>--- Coins Help ---</bold></gold></shadow>"
 
-# /coinshop menu
+# /coinshop menus
 shop:
   not-enough-coins: "<shadow:black><red>You don't have enough coins for that.</red></shadow>"
   # <item>
   unlocked: "<shadow:black><green>Unlocked <yellow><bold><item></bold></yellow>! Click it again to equip it.</green></shadow>"
+  unlocked-equipped: "<shadow:black><green>Bought and equipped <yellow><bold><item></bold></yellow>!</green></shadow>"
   unlocked-perk: "<shadow:black><green>Unlocked <yellow><bold><item></bold></yellow>!</green></shadow>"
   equipped: "<shadow:black><green>Equipped <yellow><bold><item></bold></yellow>!</green></shadow>"
   unequipped: "<shadow:black><yellow>Unequipped <white><item></white>.</yellow></shadow>"
   already-unlocked: "<shadow:black><gray>Already unlocked</gray></shadow>"
   purchased-wand: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow>!</green></shadow>"
-  # <item> - used for placeholder buttons that aren't wired up to real purchase logic yet
-  coming-soon: "<shadow:black><yellow><bold><item></bold> isn't purchasable yet - coming soon!</yellow></shadow>"
+  # <item>
+  give-failed: "<shadow:black><red>Couldn't give your <item> (the server command didn't run) - you got your money back.</red></shadow>"
+  inventory-full: "<shadow:black><yellow>Your inventory was full - the rest was dropped at your feet.</yellow></shadow>"
+  loading: "<shadow:black><yellow>Your shop data is still loading, try again in a moment.</yellow></shadow>"
+  section-off: "<shadow:black><red>That part of the shop is turned off.</red></shadow>"
   balance-line: "<shadow:black><gray>Your balance: <gold><bold><balance> coins</bold></gold></gray></shadow>"
 
 # sellwand + spawner sellwand
@@ -57,10 +63,13 @@ sellwand:
   # <amount>
   sold: "<shadow:black><green>Sold chest contents for <gold><bold><amount> coins</bold></gold>!</green></shadow>"
   broke: "<shadow:black><red>Your sellwand broke!</red></shadow>"
+  # The wand item. <name>, <multiplier>, <uses>
+  item-name: "<gold><name>"
+  item-lore: "<green>Multiplier: <multiplier>x\n<aqua>Uses left: <uses>\n<gray>Right click a chest to sell its contents!"
 
-# Buy Coins dialog - the only section with the coin emoji, per request
+# Buy Coins menu
 buycoins:
-  # <price>, <coins> - one line per tier, shown as info text in the Buy Coins dialog
+  # <price>, <coins> - one line per tier
   tier-line: "<shadow:black><gray><price> <dark_gray>→</dark_gray> <gold><bold><coins> coins 🪙</bold></gold></gray></shadow>"
   # <url>
   visit-store: "<shadow:black><gold>Click here to visit the store and buy coins 🪙: <aqua><underlined><url></underlined></aqua></gold></shadow>"
@@ -68,7 +77,7 @@ buycoins:
 
 # Orbs (second currency)
 orbs:
-  # <amount> - broadcast to a player individually every orbs.interval-minutes
+  # <amount>
   received: "<shadow:black><white>You received <light_purple><bold><amount> orbs</bold></light_purple> playing this server!</white></shadow>"
   balance-self: "<shadow:black><gray>Your Orbs balance: <light_purple><bold><balance> orbs</bold></light_purple></gray></shadow>"
   balance-other: "<shadow:black><gray><aqua><player></aqua>'s Orbs balance: <light_purple><bold><balance> orbs</bold></light_purple></gray></shadow>"
@@ -76,14 +85,13 @@ orbs:
   # <item>, <price>
   purchased: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow> for <light_purple><bold><price> orbs</bold></light_purple>!</green></shadow>"
 
-# /orb ... (admin command, mirrors /coin)
+# /orb ... (mirrors /coin)
 orbcmd:
   usage-balance-console: "<shadow:black><red>Console must specify a player: <gray>/orb balance <player></gray></red></shadow>"
   usage-give: "<shadow:black><red>Usage: <gray>/orb give <player> <amount></gray></red></shadow>"
   usage-giveall: "<shadow:black><red>Usage: <gray>/orb giveall <amount></gray></red></shadow>"
   usage-remove: "<shadow:black><red>Usage: <gray>/orb remove <player> <amount></gray></red></shadow>"
   usage-set: "<shadow:black><red>Usage: <gray>/orb set <player> <amount></gray></red></shadow>"
-  # <player>, <amount>
   gave: "<shadow:black><green>Gave <light_purple><bold><amount> orbs</bold></light_purple> to <aqua><player></aqua></green></shadow>"
   received: "<shadow:black><white><light_purple><bold><amount> orbs</bold></light_purple> has been added to your account!</white></shadow>"
   gave-all: "<shadow:black><green>Gave <light_purple><bold><amount> orbs</bold></light_purple> to every online player.</green></shadow>"
@@ -91,3 +99,144 @@ orbcmd:
   removed: "<shadow:black><green>Removed <light_purple><bold><amount> orbs</bold></light_purple> from <aqua><player></aqua></green></shadow>"
   set: "<shadow:black><green>Set <aqua><player></aqua>'s Orbs balance to <light_purple><bold><amount> orbs</bold></light_purple></green></shadow>"
   help-header: "<shadow:black><light_purple><bold>--- Orbs Help ---</bold></light_purple></shadow>"
+
+# Settings menu (/coinshop settings)
+settings:
+  saved: "<shadow:black><green>Settings saved.</green></shadow>"
+  # <setting>
+  bad-number: "<shadow:black><red><setting>: that's not a number - kept the old value.</red></shadow>"
+  only-dialog: "<shadow:black><yellow>Change this one with /coinshop dialog or in config.yml.</yellow></shadow>"
+
+# ------------------------------------------------------------------
+# Menu texts (dialogs and chest menus)
+# ------------------------------------------------------------------
+menu:
+  # <coins>, <orbs>
+  balance: "<gray>Your balance: <gold><bold><coins> coins</bold></gold> <dark_gray>|</dark_gray> <light_purple><bold><orbs> orbs</bold></light_purple>"
+  # <orbs>
+  orbs-balance: "<gray>Your Orbs: <light_purple><bold><orbs> orbs</bold></light_purple>"
+  loading: "<yellow>Loading your data..."
+  empty: "<gray>Nothing here yet."
+  # <page>, <pages>
+  page: "<gray>Page <white><page></white> of <white><pages></white>"
+  # <query>, <count>
+  search-results: "<gray>Search: <white><query></white> <dark_gray>(<count> found)</dark_gray>"
+  search-label: "Search a country"
+  info: "<gold><bold>Info"
+
+  # Main menu buttons
+  button:
+    chatcolors: "<yellow>Chat Colour"
+    glows: "<yellow>Glow"
+    perks: "<yellow>Perks"
+    tags: "<yellow>Tags"
+    gradients: "<yellow>Name Gradient"
+    flags: "<yellow>Flags"
+    sellwands: "<yellow>Sellwands"
+    spawnerwands: "<yellow>Spawner Sellwands"
+    buycoins: "<yellow>Buy Coins"
+    topcoins: "<yellow>Top Coins"
+    orbshop: "<yellow>Orbshop"
+    settings: "<red>Settings"
+    back: "<red><< Back"
+    close: "<red>Close"
+    next: "<yellow>Next >>"
+    previous: "<yellow><< Previous"
+    search: "<aqua>Search"
+    clear-search: "<gray>Show all"
+    visit-store: "<green>Visit Store 🪙"
+    orbs-top: "<aqua>Orbs Top"
+    save: "<green><bold>Save"
+    prices: "<gold>Prices"
+  tooltip:
+    back: "<gray>Return to the previous menu"
+    buy: "<yellow>Click to purchase"
+    equip: "<gray>Click to equip"
+    unequip: "<gray>Click to turn off and go back to default"
+    owned: "<gray>Already unlocked"
+    store: "<gray>Get a clickable store link in chat"
+    orbs-top: "<gray>See who has the most Orbs on the server"
+    sellwand: "<gray>Right click a chest with this wand to sell its contents"
+    spawnerwand: "<gray>Sells spawners at a bonus rate"
+    page: "<gray>Go to another page"
+    search: "<gray>Type a country above, then click Search"
+
+  # Shown after an item's name. <price>
+  status:
+    price: "<gray>[<gold><price> coins</gold>]"
+    price-orbs: "<gray>[<light_purple><price> orbs</light_purple>]"
+    owned: "<aqua>[Owned - click to equip]"
+    active: "<green>[ACTIVE - click to disable]"
+    perk-owned: "<green>- OWNED"
+  # <multiplier>, <uses>
+  wand: "<gray>(<multiplier>x | <uses> uses)"
+  spawnerwand: "<gray>(<multiplier>x)"
+  # Tag preview: <player>, <tag>
+  tag-preview: "<white><player> <tag>"
+  # A flag in the list (the flag picture is put in front). <country>, <code>
+  flag-label: "<white><country>"
+
+  # Top lists. <rank> (coloured #1, #2...), <player> (aqua for yourself), <amount>
+  top-line: "<rank> <player> <dark_gray>-</dark_gray> <green><amount> coins"
+  top-line-orbs: "<rank> <player> <dark_gray>-</dark_gray> <light_purple><amount> orbs"
+  # <amount>
+  top-you: "<aqua>You: <green><amount> coins"
+  top-you-orbs: "<aqua>You: <light_purple><amount> orbs"
+  top-empty: "<gray>Nobody has any coins yet!"
+  top-empty-orbs: "<gray>Nobody has any orbs yet!"
+  top-loading: "<gray>Loading..."
+
+  # Settings menu
+  settings-intro: "<gray>Changes are saved to config.yml and work right away."
+  settings-toggles: "<gold><bold>Switches"
+  settings-values: "<gold><bold>Values"
+  # <state>
+  setting-on: "<green>ON"
+  setting-off: "<red>OFF"
+  # Chest menu lore of a switch: <state>
+  toggle-lore: "<gray>Now: <state>\n<yellow>Click to switch"
+  # Chest menu lore of a value: <value>, <step>
+  value-lore: "<gray>Now: <white><value></white>\n<yellow>Left click +<step>, right click -<step>\n<yellow>Shift: x10"
+  choice-lore: "<gray>Now: <white><value></white>\n<yellow>Click to change"
+  text-lore: "<gray>Now: <white><value></white>\n<yellow>Change it in the dialog menu or config.yml"
+  prices-intro: "<gray>Type a new price and press Save. Prices are in coins (Orbshop: orbs)."
+  # <price>
+  price-lore: "<gray>Price: <gold><price></gold>\n<yellow>Left click +<step>, right click -<step>\n<yellow>Shift: x10"
+  prices-pick: "<gray>Pick what to change the prices of."
+
+  # Names of the settings
+  setting:
+    cat-chatcolors: "Chat Colour section"
+    cat-glows: "Glow section"
+    cat-perks: "Perks section"
+    cat-tags: "Tags section"
+    cat-gradients: "Name Gradient section"
+    cat-flags: "Flags section"
+    cat-sellwands: "Sellwands section"
+    cat-spawnerwands: "Spawner Sellwands section"
+    cat-buycoins: "Buy Coins section"
+    cat-topcoins: "Top Coins section"
+    cat-orbshop: "Orbshop section"
+    equip-on-purchase: "Equip right after buying"
+    log-purchases: "Log purchases in the console"
+    show-balance: "Show balance in the main menu"
+    sounds: "Sounds"
+    chat: "Format chat"
+    chat-tags: "Tags in chat"
+    chat-flags: "Flags in chat"
+    chat-colors: "Chat colours"
+    names-tab: "Name gradient in the tab list"
+    names-display: "Name gradient as display name"
+    flags-rotate: "Changing flag on the menu"
+    orbs-payout: "Give Orbs over time"
+    orbs-message: "Orbs message"
+    flag-price: "Flag price (coins)"
+    orb-interval: "Orbs every ... minutes"
+    orb-amount: "Orbs each time"
+    rotate-seconds: "Flag changes every ... seconds"
+    top-size: "Players in Top lists"
+    click-cooldown: "Click cooldown (ms)"
+    menu-style: "Menu style"
+    bedrock-style: "Bedrock menu style"
+    flags-bedrock: "Flags for Bedrock"
+    store-url: "Store link"
