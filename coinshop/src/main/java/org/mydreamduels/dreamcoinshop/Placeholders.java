@@ -57,10 +57,10 @@ final class Placeholders extends PlaceholderExpansion {
             case "orbs_exact":
                 return profile == null ? "0" : String.valueOf(profile.balance(Currency.ORBS));
             case "gradient_name":
-                return player instanceof Player online && profile != null ? cos.nameMini(online, profile) : String.valueOf(player.getName());
+                return player instanceof Player online && profile != null ? cos.nameMini(online, profile) : player.getName() == null ? "" : player.getName();
             case "gradient_name_legacy":
                 return player instanceof Player online && profile != null
-                        ? plugin.text().legacy(cos.nameMini(online, profile), null) : String.valueOf(player.getName());
+                        ? plugin.text().legacy(cos.nameMini(online, profile), null) : player.getName() == null ? "" : player.getName();
             case "tag": {
                 String tag = cos.tagMini(profile);
                 return tag == null ? "" : plugin.text().legacy(tag, null);

@@ -9,6 +9,7 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,8 @@ final class DataManager implements Listener {
     private final Map<UUID, Profile> profiles = new ConcurrentHashMap<>();
     private final Map<Currency, Top> tops = new EnumMap<>(Currency.class);
     private final Map<Currency, AtomicBoolean> topLoading = new EnumMap<>(Currency.class);
+    /** Everyone waiting for a leaderboard that is loading: each gets its callback when it's in. */
+    private final Map<Currency, List<Runnable>> topWaiting = new EnumMap<>(Currency.class);
     private final AtomicBoolean polling = new AtomicBoolean();
     private final AtomicBoolean reconnecting = new AtomicBoolean();
     /** Change ids already handled (the poll looks back a little, see poll()). */
@@ -83,7 +86,10 @@ final class DataManager implements Listener {
         this.log = plugin.getLogger();
         String name = serverName == null || serverName.isBlank() ? "server" : serverName.trim();
         this.origin = name + "#" + Integer.toHexString(ThreadLocalRandom.current().nextInt(0x100000, 0xFFFFFF));
-        for (Currency c : Currency.values()) topLoading.put(c, new AtomicBoolean());
+        for (Currency c : Currency.values()) {
+            topLoading.put(c, new AtomicBoolean());
+            topWaiting.put(c, new ArrayList<>());
+        }
     }
 
     void onReloaded(Consumer<Profile> callback) {
@@ -477,19 +483,33 @@ final class DataManager implements Listener {
             Top t = tops.get(c);
             if (t != null && System.currentTimeMillis() - t.at() < topRefreshMs) return;
         }
-        if (!topLoading.get(c).compareAndSet(false, true)) return;
+        List<Runnable> waiting = topWaiting.get(c);
+        synchronized (waiting) {
+            if (after != null) waiting.add(after);
+            if (!topLoading.get(c).compareAndSet(false, true)) return; // already loading: it runs ours too
+        }
         boolean queued = execute(s -> {
             try {
                 List<Storage.TopEntry> list = s.top(c, limit);
                 synchronized (tops) {
                     tops.put(c, new Top(List.copyOf(list), System.currentTimeMillis()));
                 }
-                if (after != null) platform.global(after);
             } finally {
-                topLoading.get(c).set(false);
+                finishTop(c, true);
             }
         });
-        if (!queued) topLoading.get(c).set(false);
+        if (!queued) finishTop(c, false);
+    }
+
+    private void finishTop(Currency c, boolean run) {
+        List<Runnable> waiting = topWaiting.get(c);
+        List<Runnable> callbacks;
+        synchronized (waiting) {
+            callbacks = new ArrayList<>(waiting);
+            waiting.clear();
+            topLoading.get(c).set(false);
+        }
+        if (run) for (Runnable r : callbacks) platform.global(r);
     }
 
     void invalidateTops() {

@@ -192,6 +192,27 @@ final class SqlStorage implements Storage {
 
     @Override
     public synchronized void addBalance(UUID uuid, Currency currency, double delta, String opId) throws SQLException {
+        // Two servers changing the same player can deadlock on MySQL/MariaDB; the database then
+        // cancels one of them, which is safe to run again (the op id makes it count only once)
+        for (int attempt = 1; ; attempt++) {
+            try {
+                addBalanceOnce(uuid, currency, delta, opId);
+                return;
+            } catch (SQLException e) {
+                String state = e.getSQLState();
+                boolean conflict = state != null && (state.equals("40001") || state.equals("40P01"));
+                if (!conflict || attempt >= 5) throw e;
+                try {
+                    Thread.sleep(10L * attempt + java.util.concurrent.ThreadLocalRandom.current().nextInt(20));
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+    }
+
+    private void addBalanceOnce(UUID uuid, Currency currency, double delta, String opId) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
@@ -206,14 +227,11 @@ final class SqlStorage implements Storage {
                     }
                 }
             }
-            ensurePlayer(uuid);
-            String col = currency.column;
-            try (PreparedStatement ps = c.prepareStatement("UPDATE " + players + " SET " + col + " = "
-                    + max() + "(" + col + " + ?, 0), updated_at = ? WHERE uuid = ?")) {
-                ps.setDouble(1, delta);
-                ps.setLong(2, System.currentTimeMillis());
-                ps.setString(3, uuid.toString());
-                ps.executeUpdate();
+            // Update first: creating the row up front (INSERT IGNORE) takes a shared lock on
+            // MySQL/MariaDB that makes two servers adding at once deadlock each other
+            if (updateBalance(c, uuid, currency, delta) == 0) {
+                ensurePlayer(uuid);
+                updateBalance(c, uuid, currency, delta);
             }
             c.commit();
         } catch (SQLException e) {
@@ -227,6 +245,17 @@ final class SqlStorage implements Storage {
                 c.setAutoCommit(auto);
             } catch (SQLException ignored) {
             }
+        }
+    }
+
+    private int updateBalance(Connection c, UUID uuid, Currency currency, double delta) throws SQLException {
+        String col = currency.column;
+        try (PreparedStatement ps = c.prepareStatement("UPDATE " + players + " SET " + col + " = "
+                + max() + "(" + col + " + ?, 0), updated_at = ? WHERE uuid = ?")) {
+            ps.setDouble(1, delta);
+            ps.setLong(2, System.currentTimeMillis());
+            ps.setString(3, uuid.toString());
+            return ps.executeUpdate();
         }
     }
 

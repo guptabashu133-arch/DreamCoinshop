@@ -49,9 +49,6 @@ final class PaperChat implements Listener {
         Cosmetics cos = plugin.cosmetics();
         AdventureText text = (AdventureText) plugin.text();
 
-        String plain = PlainTextComponentSerializer.plainText().serialize(event.message());
-        String messageMini = cfg.chatColors ? cos.colorMessage(profile, Text.escape(plain)) : null;
-        Component message = messageMini == null || messageMini.equals(Text.escape(plain)) ? event.message() : text.parse(messageMini, null);
         Component name = text.parse(cos.nameMini(player, profile), null);
         String tagMini = cfg.chatTags ? cos.tagMini(profile) : null;
         Component tag = tagMini == null ? Component.empty() : Component.space().append(text.parse(tagMini, null));
@@ -61,6 +58,10 @@ final class PaperChat implements Listener {
         Map<Integer, Component> lines = new HashMap<>();
         event.renderer((source, sourceName, msg, viewer) -> lines.computeIfAbsent(kind(viewer), k -> {
             Component flagPart = flag == null ? Component.empty() : flagFor(k, flag, text, cos);
+            // msg is the message as it is now, after any other plugin changed it
+            String plain = PlainTextComponentSerializer.plainText().serialize(msg);
+            String messageMini = cfg.chatColors ? cos.colorMessage(profile, Text.escape(plain)) : null;
+            Component message = messageMini == null || messageMini.equals(Text.escape(plain)) ? msg : text.parse(messageMini, null);
             Map<String, Component> parts = Map.of("name", name, "tag", tag, "flag", flagPart, "message", message);
             return text.parse(cfg.chatFormat, null, parts);
         }));

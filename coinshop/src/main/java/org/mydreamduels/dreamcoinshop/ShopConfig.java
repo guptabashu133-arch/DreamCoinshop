@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -367,8 +368,19 @@ final class ShopConfig {
                 if (!old.isConfigurationSection(section)) continue;
                 // Empty the section but keep its key, so the comment above it stays
                 ConfigurationSection target = fresh.getConfigurationSection(section);
-                if (target != null) for (String key : target.getKeys(false)) target.set(key, null);
+                // Version 1 items have no icon: keep the 2.0 icon of an item with the same key
+                Map<String, Object> icons = new HashMap<>();
+                if (target != null) {
+                    for (String key : target.getKeys(false)) {
+                        if (target.contains(key + ".icon")) icons.put(key, target.get(key + ".icon"));
+                        target.set(key, null);
+                    }
+                }
                 copySection(old, fresh, section, section);
+                for (Map.Entry<String, Object> icon : icons.entrySet()) {
+                    String path = section + "." + icon.getKey();
+                    if (fresh.isConfigurationSection(path) && !fresh.contains(path + ".icon")) fresh.set(path + ".icon", icon.getValue());
+                }
             }
             // The head hunt event is gone; so is its event-only tag
             if (fresh.getBoolean("tags.india.event-only", false)) fresh.set("tags.india", null);

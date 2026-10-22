@@ -56,6 +56,7 @@ shop:
   purchased-wand: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow>!</green></shadow>"
   # <item>
   give-failed: "<shadow:black><red>Couldn't give your <item> (the server command didn't run) - you got your money back.</red></shadow>"
+  give-partly: "<shadow:black><red>Only part of your <item> could be given (a server command failed). Please tell staff - it was logged.</red></shadow>"
   inventory-full: "<shadow:black><yellow>Your inventory was full - the rest was dropped at your feet.</yellow></shadow>"
   loading: "<shadow:black><yellow>Your shop data is still loading, try again in a moment.</yellow></shadow>"
   section-off: "<shadow:black><red>That part of the shop is turned off.</red></shadow>"

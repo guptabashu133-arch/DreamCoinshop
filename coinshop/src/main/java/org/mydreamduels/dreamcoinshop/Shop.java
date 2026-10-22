@@ -20,6 +20,8 @@ final class Shop {
     /** Same keys as version 1, so wands bought before the update keep working. */
     static final NamespacedKey WAND_MULTIPLIER = new NamespacedKey("dreamcoinshop", "wand_multiplier");
     static final NamespacedKey WAND_USES = new NamespacedKey("dreamcoinshop", "wand_uses");
+    /** A random id per wand, so two wands never stack and share one use counter. */
+    static final NamespacedKey WAND_ID = new NamespacedKey("dreamcoinshop", "wand_id");
 
     private final Dreamcoinshop plugin;
     private final Platform platform;
@@ -153,6 +155,7 @@ final class Shop {
         text().itemText(meta, viewer, text().raw("sellwand.item-name"), List.of(text().raw("sellwand.item-lore")), ph);
         meta.getPersistentDataContainer().set(WAND_MULTIPLIER, PersistentDataType.DOUBLE, multiplier);
         meta.getPersistentDataContainer().set(WAND_USES, PersistentDataType.INTEGER, uses);
+        meta.getPersistentDataContainer().set(WAND_ID, PersistentDataType.STRING, java.util.UUID.randomUUID().toString());
         item.setItemMeta(meta);
         return item;
     }
@@ -180,7 +183,7 @@ final class Shop {
                 .replace("%player%", player.getName())
                 .replace("%multiplier%", format(wand.multiplier()) + "x");
         runCommands(List.of(command), ok -> {
-            if (ok) {
+            if (ok == null || ok) {
                 log(player, "spawner sellwand " + key, wand.price(), Currency.COINS);
                 text().send(player, "shop.purchased-wand", Ph.of("item", Text.plain(wand.display())));
                 plugin.sounds().play(player, "purchase-success");
@@ -206,7 +209,11 @@ final class Shop {
         }
         List<String> commands = item.commands().stream().map(c -> c.replace("%player%", player.getName())).toList();
         runCommands(commands, ok -> {
-            if (ok) {
+            if (ok == null) {
+                log(player, "orbshop " + key + " (partly given)", item.price(), Currency.ORBS);
+                text().send(player, "shop.give-partly", Ph.of("item", Text.plain(item.display())));
+                plugin.sounds().play(player, "purchase-fail");
+            } else if (ok) {
                 log(player, "orbshop " + key, item.price(), Currency.ORBS);
                 text().send(player, "orbs.purchased", Ph.of("item", Text.plain(item.display()), "price", format(item.price())));
                 plugin.sounds().play(player, "purchase-success");
@@ -222,11 +229,16 @@ final class Shop {
         plugin.data().addAnywhere(player.getUniqueId(), c, amount);
     }
 
-    /** Console commands on the main/global thread; then reports whether all of them ran. */
+    /**
+     * Console commands on the main/global thread, stopping at the first one that fails. Reports
+     * true when all ran, false when the first one failed (nothing was given - refund), and null
+     * when a later one failed (part of it was given - no refund, the console log says what).
+     */
     private void runCommands(List<String> commands, java.util.function.Consumer<Boolean> done) {
         platform.global(() -> {
-            boolean ok = true;
-            for (String command : commands) {
+            Boolean ok = true;
+            for (int i = 0; i < commands.size(); i++) {
+                String command = commands.get(i);
                 boolean ran;
                 try {
                     ran = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
@@ -235,8 +247,10 @@ final class Shop {
                     plugin.getLogger().warning("\"" + command + "\" failed: " + ex);
                 }
                 if (!ran) {
-                    ok = false;
                     plugin.getLogger().warning("The command \"" + command + "\" didn't run (is the plugin for it installed?)");
+                    if (i > 0) plugin.getLogger().warning("The commands before it did run, so no refund was given - check the purchase by hand.");
+                    ok = i == 0 ? false : null;
+                    break;
                 }
             }
             done.accept(ok);

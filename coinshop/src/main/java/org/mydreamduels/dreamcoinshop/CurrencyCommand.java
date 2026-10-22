@@ -130,6 +130,19 @@ final class CurrencyCommand implements TabExecutor {
             return;
         }
         String targetName = args[1];
+        if (!sender.hasPermission("dreamcoinshop.admin")) {
+            // Players may look up anyone online; offline lookups (a database query each) are for admins
+            Player target = Bukkit.getPlayerExact(targetName);
+            Profile profile = target == null ? null : plugin.data().online(target.getUniqueId());
+            if (profile == null || !profile.isLoaded()) {
+                text().send(sender, "general.unknown-player", Ph.of("player", targetName));
+                return;
+            }
+            boolean self = sender instanceof Player p && p.getUniqueId().equals(target.getUniqueId());
+            text().send(sender, balancePath(self), Ph.of("player", target.getName(),
+                    "balance", Shop.format(Math.floor(profile.balance(currency)))));
+            return;
+        }
         plugin.data().resolve(targetName).thenAccept(uuid -> {
             if (uuid == null) {
                 text().send(sender, "general.unknown-player", Ph.of("player", targetName));

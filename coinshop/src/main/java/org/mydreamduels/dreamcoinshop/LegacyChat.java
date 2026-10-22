@@ -59,7 +59,8 @@ final class LegacyChat implements Listener {
                 .snippet("flag", flagMini);
         String before = text.legacy(head, ph).replace("%", "%%");
         String after = text.legacy(tail, ph).replace("%", "%%");
-        event.setMessage(text.legacy(messageMini, null));
+        // Only a coloured message is rewritten; a plain one keeps the colour the format gives it
+        if (!messageMini.equals(escaped)) event.setMessage(text.legacy(messageMini, null));
         event.setFormat(before + "%2$s" + after);
     }
 }

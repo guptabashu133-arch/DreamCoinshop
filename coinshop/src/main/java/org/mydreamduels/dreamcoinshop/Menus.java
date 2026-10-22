@@ -145,8 +145,8 @@ final class Menus implements Listener {
         ShopConfig cfg = plugin.config();
         if (cfg.menuStyle == ShopConfig.MenuStyle.GUI || dialogs == null) return Kind.CHEST;
         if (plugin.bedrock().isBedrock(player)) {
-            return cfg.menuStyle == ShopConfig.MenuStyle.DIALOG || cfg.bedrockStyle == ShopConfig.MenuStyle.DIALOG
-                    ? Kind.DIALOG : Kind.CHEST;
+            // Bedrock players always get menu.bedrock-style (forms suit them better than dialogs)
+            return cfg.bedrockStyle == ShopConfig.MenuStyle.DIALOG ? Kind.DIALOG : Kind.CHEST;
         }
         return ClientInfo.supportsDialogs(player) ? Kind.DIALOG : Kind.CHEST;
     }

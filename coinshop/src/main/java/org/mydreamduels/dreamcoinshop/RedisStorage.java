@@ -301,14 +301,19 @@ final class RedisStorage implements Storage {
                         lost = false;
                         onReconnect.run(); // messages sent while we were away are gone: reload instead
                     }
+                    boolean pinged = false;
                     while (!closed) {
                         Object msg;
                         try {
                             msg = sub.read();
                         } catch (SocketTimeoutException quiet) {
+                            // A PING that got no answer in 30 s: the connection is dead even if the socket isn't
+                            if (pinged) throw new IOException("Redis stopped answering");
                             sub.send("PING"); // keeps the connection checked; the reply arrives as a message
+                            pinged = true;
                             continue;
                         }
+                        pinged = false;
                         if (msg instanceof List<?> l && l.size() >= 3 && "message".equals(l.get(0))) {
                             String body = String.valueOf(l.get(2));
                             int split = body.indexOf('|');

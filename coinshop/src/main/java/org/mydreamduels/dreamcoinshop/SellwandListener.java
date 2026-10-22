@@ -32,7 +32,7 @@ final class SellwandListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
         ItemStack hand = event.getItem();
@@ -72,7 +72,7 @@ final class SellwandListener implements Listener {
         for (int i = 0; i < inv.getSize(); i++) {
             ItemStack item = inv.getItem(i);
             if (item == null || item.getType() == Material.AIR) continue;
-            if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) continue; // renamed / custom items are never sold
+            if (custom(item)) continue; // renamed / custom items are never sold
             double price = plugin.config().sellPrice(item.getType().name());
             if (price <= 0) continue;
             total += price * item.getAmount() * multiplier;
@@ -103,5 +103,13 @@ final class SellwandListener implements Listener {
                 List.of(text.raw("sellwand.item-lore")), ph);
         hand.setItemMeta(meta);
         player.getInventory().setItemInMainHand(hand);
+    }
+
+    /** Items another plugin made or a player renamed: name, lore, model data or plugin data. */
+    private static boolean custom(ItemStack item) {
+        if (!item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta.hasDisplayName() || meta.hasLore() || meta.hasCustomModelData()
+                || !meta.getPersistentDataContainer().getKeys().isEmpty();
     }
 }

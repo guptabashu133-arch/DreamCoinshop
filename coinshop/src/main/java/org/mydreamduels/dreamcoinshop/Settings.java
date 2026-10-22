@@ -188,6 +188,11 @@ final class Settings {
      * main/global thread, where config.yml is safe to write).
      */
     void apply(Map<String, Object> changes, org.bukkit.entity.Player who, Runnable then) {
+        // Checked on every save, not only when the menu opened: the permission may be gone by now
+        if (who != null && !who.hasPermission("dreamcoinshop.settings")) {
+            plugin.text().send(who, "general.no-permission", null);
+            return;
+        }
         if (changes.isEmpty()) {
             if (then != null) platform.global(then);
             return;

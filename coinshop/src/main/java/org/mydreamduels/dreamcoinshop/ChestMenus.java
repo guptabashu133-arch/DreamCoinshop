@@ -88,7 +88,9 @@ final class ChestMenus implements Menus.Renderer, Listener {
         if (!userAction && !stillOpen) return; // background redraw of a menu that is no longer open
 
         // Same screen (or another page of it): redraw in place, so the mouse doesn't jump
-        boolean inPlace = stillOpen && current.view.id().equals(view.id()) && current.inventory.getSize() == rows * 9;
+        // (the title can't change in place, and it differs per arg - e.g. each price section)
+        boolean inPlace = stillOpen && current.view.id().equals(view.id())
+                && java.util.Objects.equals(current.view.arg(), view.arg()) && current.inventory.getSize() == rows * 9;
         Holder holder;
         if (inPlace) {
             holder = current;
@@ -249,7 +251,8 @@ final class ChestMenus implements Menus.Renderer, Listener {
         event.setCancelled(true);
         if (event.getClickedInventory() != top || !(event.getWhoClicked() instanceof Player player)) return;
         ClickType type = event.getClick();
-        if (type == ClickType.DOUBLE_CLICK || type == ClickType.NUMBER_KEY || type == ClickType.DROP || type == ClickType.CONTROL_DROP) return;
+        // Only plain and shift clicks are buttons (no number keys, drops, swaps or creative middle click)
+        if (type != ClickType.LEFT && type != ClickType.RIGHT && type != ClickType.SHIFT_LEFT && type != ClickType.SHIFT_RIGHT) return;
         Menu.Button b = holder.slots.get(event.getRawSlot());
         if (b == null || b.action() == null) return;
         long now = System.currentTimeMillis();

@@ -52,6 +52,13 @@ final class MiniLegacy {
     private MiniLegacy() {
     }
 
+    /** "#a1b2c3" only - anything else (a typo in a config) is ignored instead of breaking the text. */
+    private static boolean isHex(String s) {
+        if (s == null || s.length() != 7 || s.charAt(0) != '#') return false;
+        for (int i = 1; i < 7; i++) if (Character.digit(s.charAt(i), 16) < 0) return false;
+        return true;
+    }
+
     String render(String mini, Ph ph) {
         List<Piece> pieces = new ArrayList<>();
         Deque<Style> stack = new ArrayDeque<>();
@@ -134,7 +141,7 @@ final class MiniLegacy {
 
         Style top = stack.peek();
         Style next = null;
-        if (lower.startsWith("#") && lower.length() == 7) {
+        if (isHex(lower)) {
             next = top.copy(name);
             next.color = lower;
             next.gradient = null;
@@ -145,7 +152,7 @@ final class MiniLegacy {
         } else if (name.equals("color") || name.equals("colour") || name.equals("c")) {
             String col = arg.toLowerCase(Locale.ROOT);
             next = top.copy(name);
-            next.color = col.startsWith("#") ? col : NAMED.getOrDefault(col, top.color);
+            next.color = isHex(col) ? col : NAMED.getOrDefault(col, top.color);
             next.gradient = null;
         } else if (name.equals("b") || name.equals("bold")) {
             next = top.copy(name);
@@ -166,8 +173,8 @@ final class MiniLegacy {
             Gradient g = new Gradient();
             for (String part : arg.split(":")) {
                 String col = part.toLowerCase(Locale.ROOT);
-                String hex = col.startsWith("#") ? col : NAMED.get(col);
-                if (hex != null && hex.length() == 7) g.stops.add(rgb(hex));
+                String hex = isHex(col) ? col : NAMED.get(col);
+                if (hex != null) g.stops.add(rgb(hex));
             }
             if (g.stops.size() == 1) g.stops.add(g.stops.get(0));
             if (g.stops.isEmpty()) g.stops.add(new int[] {255, 255, 255});
