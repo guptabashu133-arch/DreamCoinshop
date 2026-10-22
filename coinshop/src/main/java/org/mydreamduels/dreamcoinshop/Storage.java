@@ -45,8 +45,12 @@ interface Storage {
     /** A player's data without creating or renaming them; null if they were never seen. */
     Data read(UUID uuid) throws Exception;
 
-    /** balance += delta, never below 0. Creates the player if needed. */
-    void addBalance(UUID uuid, Currency currency, double delta) throws Exception;
+    /**
+     * balance += delta, never below 0. Creates the player if needed. opId (unique per change)
+     * makes it safe to retry: a change whose id was already applied is skipped, so a write that
+     * timed out but did reach the database is never counted twice. null = no such check.
+     */
+    void addBalance(UUID uuid, Currency currency, double delta, String opId) throws Exception;
 
     void setBalance(UUID uuid, Currency currency, double value) throws Exception;
 
@@ -79,7 +83,7 @@ interface Storage {
 
     long lastChangeId() throws Exception;
 
-    /** Forgets change notices older than this time. */
+    /** Forgets change notices older than this time, and applied-change ids older than a day. */
     void prune(long olderThanMillis) throws Exception;
 
     /** True when changes arrive through {@link #listen} instead of polling. */

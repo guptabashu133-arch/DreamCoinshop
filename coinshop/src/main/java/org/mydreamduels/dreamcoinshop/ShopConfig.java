@@ -113,10 +113,32 @@ final class ShopConfig {
     final Map<String, OrbItem> orbItems = new LinkedHashMap<>();
     final Map<String, Double> sellPrices = new LinkedHashMap<>();
 
+    /** config.yml can't be read (a YAML mistake). Nothing is changed or saved then. */
+    static final class BrokenConfig extends Exception {
+        BrokenConfig(String message) {
+            super(message);
+        }
+    }
+
+    /** Reads a yml file strictly: a mistake throws instead of quietly giving an empty file. */
+    static YamlConfiguration parse(File file) throws BrokenConfig {
+        YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.load(file);
+        } catch (org.bukkit.configuration.InvalidConfigurationException e) {
+            String why = e.getMessage() == null ? "" : e.getMessage().replaceAll("\\s+", " ");
+            throw new BrokenConfig(file.getName() + " has a mistake and can't be read: " + why);
+        } catch (IOException e) {
+            throw new BrokenConfig("Could not read " + file.getName() + ": " + e.getMessage());
+        }
+        return yaml;
+    }
+
     /** Writes the bundled config.yml if needed, upgrades a version 1 file, and reads everything. */
-    void load(JavaPlugin plugin) {
+    void load(JavaPlugin plugin) throws BrokenConfig {
         plugin.saveDefaultConfig();
-        upgrade(plugin);
+        YamlConfiguration onDisk = parse(new File(plugin.getDataFolder(), "config.yml"));
+        upgrade(plugin, onDisk);
         plugin.reloadConfig();
         FileConfiguration cfg = plugin.getConfig();
         try (InputStream in = plugin.getResource("config.yml")) {
@@ -302,12 +324,24 @@ final class ShopConfig {
      * head-hunts). Its file is saved as config-old.yml, a fresh config.yml is written, and every value
      * the owner had (prices, items, titles, store link...) is carried over.
      */
-    private static void upgrade(JavaPlugin plugin) {
+    private static void upgrade(JavaPlugin plugin, YamlConfiguration old) {
         File file = new File(plugin.getDataFolder(), "config.yml");
-        YamlConfiguration old = YamlConfiguration.loadConfiguration(file);
         if (old.getInt("config-version", 1) >= CONFIG_VERSION) return;
+        // Only a real version 1 file (it had "settings:") is rebuilt; anything else just gets the number
+        if (!old.isConfigurationSection("settings")) {
+            try {
+                old.set("config-version", CONFIG_VERSION);
+                old.save(file);
+            } catch (IOException e) {
+                plugin.getLogger().warning("Could not save config.yml: " + e.getMessage());
+            }
+            return;
+        }
         try {
             File backup = new File(plugin.getDataFolder(), "config-old.yml");
+            if (backup.exists()) {
+                backup = new File(plugin.getDataFolder(), "config-old-" + System.currentTimeMillis() + ".yml");
+            }
             Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
             plugin.saveResource("config.yml", true);
             YamlConfiguration fresh = YamlConfiguration.loadConfiguration(file);
@@ -345,7 +379,7 @@ final class ShopConfig {
             }
             fresh.set("config-version", CONFIG_VERSION);
             fresh.save(file);
-            plugin.getLogger().info("config.yml updated to the new layout (old file saved as config-old.yml). "
+            plugin.getLogger().info("config.yml updated to the new layout (old file saved as " + backup.getName() + "). "
                     + "Your prices, items and texts were kept.");
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Could not upgrade config.yml - your old file is config-old.yml", e);

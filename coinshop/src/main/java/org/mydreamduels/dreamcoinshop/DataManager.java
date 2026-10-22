@@ -55,6 +55,14 @@ final class DataManager implements Listener {
     private final Map<Currency, Top> tops = new EnumMap<>(Currency.class);
     private final Map<Currency, AtomicBoolean> topLoading = new EnumMap<>(Currency.class);
     private final AtomicBoolean polling = new AtomicBoolean();
+    private final AtomicBoolean reconnecting = new AtomicBoolean();
+    /** Change ids already handled (the poll looks back a little, see poll()). */
+    private final java.util.Set<Long> seenChanges = java.util.Collections.newSetFromMap(new java.util.LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Long, Boolean> eldest) {
+            return size() > 5000;
+        }
+    });
     private final String origin;
 
     private Storage storage;
@@ -99,9 +107,7 @@ final class DataManager implements Listener {
             return t;
         });
         Future<?> init = db.submit(() -> {
-            storage.init();
-            YamlImport.run(plugin, storage);
-            lastChangeId = storage.lastChangeId();
+            initStorage();
             return null;
         });
         try {
@@ -111,7 +117,7 @@ final class DataManager implements Listener {
         } catch (Exception e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
             log.severe("Could not connect to the " + storage.describe() + " database: " + cause.getMessage());
-            log.severe("Check storage: in config.yml. Retrying every 30 seconds; the shop stays closed until it works.");
+            log.severe("Check storage: in config.yml. Retrying every 10 seconds; the shop stays closed until it works.");
             if (!(e instanceof java.util.concurrent.TimeoutException)) init.cancel(true);
         }
         if (shared) {
@@ -129,8 +135,31 @@ final class DataManager implements Listener {
         }
     }
 
+    /** Database thread. */
+    private void initStorage() throws Exception {
+        if (ready) return;
+        storage.init();
+        YamlImport.run(plugin, storage, false);
+        lastChangeId = storage.lastChangeId();
+    }
+
     boolean isReady() {
         return ready;
+    }
+
+    /** /coinshop import confirm: imports this server's old yml files even if another server already did. */
+    CompletableFuture<Integer> forceImport() {
+        CompletableFuture<Integer> f = new CompletableFuture<>();
+        if (!execute(s -> {
+            try {
+                int n = YamlImport.run(plugin, s, true);
+                reloadOnline();
+                f.complete(n);
+            } catch (Exception e) {
+                f.completeExceptionally(e);
+            }
+        })) f.complete(0);
+        return f;
     }
 
     String storageName() {
@@ -150,14 +179,24 @@ final class DataManager implements Listener {
             db.shutdown();
             try {
                 if (!db.awaitTermination(15, TimeUnit.SECONDS)) {
-                    log.warning("The database took too long; some last changes may not be saved.");
-                    db.shutdownNow();
+                    int dropped = db.shutdownNow().size();
+                    log.severe("The database didn't answer in time: " + dropped + " last change(s) could not be saved.");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
-        if (storage != null) storage.close();
+        if (storage != null) {
+            // A statement stuck on a dead database must not hold up the server stopping
+            Thread closer = new Thread(storage::close, "Dreamcoinshop database close");
+            closer.setDaemon(true);
+            closer.start();
+            try {
+                closer.join(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     // ------------------------------------------------------------------ profiles
@@ -180,8 +219,11 @@ final class DataManager implements Listener {
         Profile profile = profiles.computeIfAbsent(uuid, u -> new Profile(u, name));
         profile.name(name);
         try {
-            Storage.Data data = db.submit(() -> storage.load(uuid, name)).get(10, TimeUnit.SECONDS);
-            applyLoaded(profile, data);
+            // Load and apply together on the database thread, so nothing can slip in between
+            db.submit(() -> {
+                applyLoaded(profile, storage.load(uuid, name));
+                return null;
+            }).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             // Not fatal: the player can join, the shop waits and the maintenance task retries
             log.warning("Could not load " + name + " from the database yet: " + rootMessage(e));
@@ -220,17 +262,18 @@ final class DataManager implements Listener {
     /** Every 10 s: retry players whose data didn't load, reconnect a database that wasn't there at startup. */
     private void maintenance() {
         if (!ready && !stopping) {
+            if (!reconnecting.compareAndSet(false, true)) return;
             try {
                 db.submit(() -> {
-                    storage.init();
-                    YamlImport.run(plugin, storage);
-                    lastChangeId = storage.lastChangeId();
+                    initStorage();
                     return null;
                 }).get(20, TimeUnit.SECONDS);
+                if (!ready) log.info("Connected to the " + storage.describe() + " database. The shop is open.");
                 ready = true;
-                log.info("Connected to the " + storage.describe() + " database. The shop is open.");
             } catch (Exception e) {
                 return;
+            } finally {
+                reconnecting.set(false);
             }
         }
         platform.global(() -> {
@@ -243,69 +286,113 @@ final class DataManager implements Listener {
                 }
             }
         });
-        if (shared && !storage.pushesChanges() && ThreadLocalRandom.current().nextInt(30) == 0) {
+        if (ThreadLocalRandom.current().nextInt(30) == 0) {
             execute(s -> s.prune(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(10)));
         }
     }
 
     // ------------------------------------------------------------------ changes
 
-    /** Takes the amount if the player has it. False if not (or their data isn't loaded yet). */
-    boolean charge(Profile p, Currency c, double amount) {
-        if (!p.isLoaded() || !p.tryCharge(c, amount)) return false;
-        write(p, s -> s.addBalance(p.uuid, c, -amount));
-        return true;
-    }
-
-    void add(Profile p, Currency c, double delta) {
-        p.add(c, delta);
-        write(p, s -> s.addBalance(p.uuid, c, delta));
-    }
-
-    void set(Profile p, Currency c, double value) {
-        p.set(c, value);
-        write(p, s -> s.setBalance(p.uuid, c, value));
-    }
-
-    void unlock(Profile p, Category c, String item) {
-        if (p.unlock(c, item)) write(p, s -> s.unlock(p.uuid, c, item));
-    }
-
-    void revoke(Profile p, Category c, String item) {
-        if (p.revoke(c, item)) write(p, s -> s.revoke(p.uuid, c, item));
-    }
-
-    void setActive(Profile p, Category c, String item) {
-        p.setActive(c, item);
-        write(p, s -> s.setActive(p.uuid, c, item));
-    }
-
-    /** A change for a player who isn't online here (another server, or offline). */
-    void writeOffline(UUID uuid, Op op) {
-        Profile here = profiles.get(uuid);
-        if (here != null) {
-            write(here, op);
-            execute(s -> reloadNow(uuid));
-            return;
-        }
-        execute(s -> {
-            withRetry(op, "change for " + uuid);
-            if (shared) s.publish(uuid, origin);
-            if (profiles.containsKey(uuid)) reloadNow(uuid); // they logged in here meanwhile
-        });
-    }
-
-    private void write(Profile p, Op op) {
+    /**
+     * Changes a player's data: first marks a write as on its way (so a reload from the database
+     * can't overwrite the change before it's saved), then changes memory, then queues the write.
+     */
+    private boolean change(Profile p, java.util.function.BooleanSupplier inMemory, Op op) {
         p.beginWrite();
+        boolean changed;
+        try {
+            changed = inMemory.getAsBoolean();
+        } catch (RuntimeException e) {
+            p.endWrite();
+            throw e;
+        }
+        if (!changed) {
+            p.endWrite();
+            return false;
+        }
         boolean queued = execute(s -> {
             try {
                 withRetry(op, "change for " + p.name());
                 if (shared) s.publish(p.uuid, origin);
+            } catch (Exception e) {
+                // Memory and database now differ: reload this player once the database is back
+                p.markStale();
+                throw e;
             } finally {
                 p.endWrite();
             }
         });
         if (!queued) p.endWrite();
+        return true;
+    }
+
+    private static String opId() {
+        return UUID.randomUUID().toString();
+    }
+
+    /** Takes the amount if the player has it. False if not (or their data isn't loaded yet). */
+    boolean charge(Profile p, Currency c, double amount) {
+        String op = opId();
+        return p.isLoaded() && change(p, () -> p.tryCharge(c, amount), s -> s.addBalance(p.uuid, c, -amount, op));
+    }
+
+    void add(Profile p, Currency c, double delta) {
+        String op = opId();
+        change(p, () -> {
+            p.add(c, delta);
+            return true;
+        }, s -> s.addBalance(p.uuid, c, delta, op));
+    }
+
+    void set(Profile p, Currency c, double value) {
+        change(p, () -> {
+            p.set(c, value);
+            return true;
+        }, s -> s.setBalance(p.uuid, c, value));
+    }
+
+    void unlock(Profile p, Category c, String item) {
+        change(p, () -> p.unlock(c, item), s -> s.unlock(p.uuid, c, item));
+    }
+
+    void revoke(Profile p, Category c, String item) {
+        change(p, () -> p.revoke(c, item), s -> s.revoke(p.uuid, c, item));
+    }
+
+    void setActive(Profile p, Category c, String item) {
+        change(p, () -> {
+            p.setActive(c, item);
+            return true;
+        }, s -> s.setActive(p.uuid, c, item));
+    }
+
+    /** Balance change for any player: online here, on another server, or offline. */
+    void addAnywhere(UUID uuid, Currency c, double delta) {
+        Profile here = profiles.get(uuid);
+        if (here != null) {
+            add(here, c, delta);
+            return;
+        }
+        String op = opId();
+        writeOffline(uuid, s -> s.addBalance(uuid, c, delta, op));
+    }
+
+    void setAnywhere(UUID uuid, Currency c, double value) {
+        Profile here = profiles.get(uuid);
+        if (here != null) {
+            set(here, c, value);
+            return;
+        }
+        writeOffline(uuid, s -> s.setBalance(uuid, c, value));
+    }
+
+    /** A change for a player who isn't online here (another server, or offline). */
+    private void writeOffline(UUID uuid, Op op) {
+        execute(s -> {
+            withRetry(op, "change for " + uuid);
+            if (shared) s.publish(uuid, origin);
+            if (profiles.containsKey(uuid)) reloadNow(uuid); // they logged in here meanwhile
+        });
     }
 
     /** Runs a write, retrying for about 18 s if the database is briefly unreachable. */
@@ -315,7 +402,7 @@ final class DataManager implements Listener {
                 op.run(storage);
                 return;
             } catch (Exception e) {
-                if (attempt >= RETRY_MS.length || (stopping && attempt >= 1)) {
+                if (attempt >= RETRY_MS.length || stopping) {
                     log.log(Level.SEVERE, "Could not save a " + what + " to the database: " + rootMessage(e));
                     throw e;
                 }
@@ -417,9 +504,12 @@ final class DataManager implements Listener {
         if (!ready || !polling.compareAndSet(false, true)) return;
         boolean queued = execute(s -> {
             try {
-                for (Storage.Change change : s.changesAfter(lastChangeId)) {
+                // Ids are not always committed in order (MySQL, PostgreSQL): look back a little
+                // and skip the ones already handled, so a late commit is never missed
+                for (Storage.Change change : s.changesAfter(Math.max(0, lastChangeId - 100))) {
+                    if (!seenChanges.add(change.id())) continue;
                     lastChangeId = Math.max(lastChangeId, change.id());
-                    if (!origin.equals(change.origin()) && profiles.containsKey(change.uuid())) reloadNow(change.uuid());
+                    if (!origin.equals(change.origin()) && profiles.containsKey(change.uuid())) reloadSafely(change.uuid());
                 }
             } finally {
                 polling.set(false);
@@ -429,7 +519,17 @@ final class DataManager implements Listener {
     }
 
     private void remoteChange(Storage.Change change) {
-        if (!origin.equals(change.origin()) && profiles.containsKey(change.uuid())) execute(s -> reloadNow(change.uuid()));
+        if (!origin.equals(change.origin()) && profiles.containsKey(change.uuid())) execute(s -> reloadSafely(change.uuid()));
+    }
+
+    /** A reload that can't fail silently: if the read fails, the player is reloaded later. */
+    private void reloadSafely(UUID uuid) {
+        try {
+            reloadNow(uuid);
+        } catch (Exception e) {
+            Profile p = profiles.get(uuid);
+            if (p != null) p.markStale();
+        }
     }
 
     /** After the Redis connection was lost for a while: changes may have been missed, so reload everyone. */

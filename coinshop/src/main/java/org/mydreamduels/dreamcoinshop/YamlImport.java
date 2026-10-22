@@ -13,8 +13,9 @@ import java.util.logging.Logger;
 /**
  * Version 1 kept balances in coins.yml / orbs.yml and unlocks in playerdata/&lt;uuid&gt;.yml. On the
  * first start with a database, all of it is copied in once, and the files are renamed to
- * *.imported (kept as a backup, never read again). A shared database only imports once: a second
- * server that still has old files is told so and leaves them alone.
+ * *.imported (kept as a backup, never read again). On a shared database, a second server that
+ * also has old files leaves them alone (two imports could overwrite each other's players) and
+ * says so; /coinshop import confirm imports them anyway.
  */
 final class YamlImport {
 
@@ -24,24 +25,21 @@ final class YamlImport {
     }
 
     /** Database thread. */
-    static void run(JavaPlugin plugin, Storage storage) throws Exception {
+    static int run(JavaPlugin plugin, Storage storage, boolean force) throws Exception {
         File dir = plugin.getDataFolder();
         File coins = new File(dir, "coins.yml");
         File orbs = new File(dir, "orbs.yml");
         File players = new File(dir, "playerdata");
         boolean anything = coins.isFile() || orbs.isFile() || players.isDirectory();
         Logger log = plugin.getLogger();
+        if (!anything) return 0;
         String done = storage.getMeta(META_KEY);
-        if (done != null) {
-            if (anything) {
-                log.warning("Found old coins.yml / orbs.yml / playerdata, but this database already has imported data ("
-                        + done + "). They were NOT imported again; delete or rename them to stop this message.");
-            }
-            return;
-        }
-        if (!anything) {
-            storage.setMeta(META_KEY, "nothing to import");
-            return;
+        if (done != null && !force) {
+            log.warning("Found old coins.yml / orbs.yml / playerdata here, but the database already has data imported "
+                    + "from them (" + done + "), probably from another server. They were NOT imported, and are kept as they are. "
+                    + "To import this server's files too (their players' balances and unlocks are then replaced by these), "
+                    + "run: /coinshop import confirm");
+            return 0;
         }
 
         Map<UUID, Storage.Data> all = new HashMap<>();
@@ -75,6 +73,7 @@ final class YamlImport {
         rename(players);
         log.info("Imported " + all.size() + " players from the old yml files into the " + storage.describe()
                 + " database. The old files were renamed to *.imported (a backup, not used any more).");
+        return all.size();
     }
 
     private static void readBalances(File file, Map<UUID, Storage.Data> all, Currency currency) {

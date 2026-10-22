@@ -43,8 +43,13 @@ import java.util.regex.Pattern;
 final class DialogMenus implements Menus.Renderer, Listener {
 
     private static final Key CLICK = Key.key("dreamcoinshop", "click");
-    private static final Pattern TOKEN = Pattern.compile("t\\s*:\\s*(-?\\d+)");
-    private static final Pattern BUTTON = Pattern.compile("b\\s*:\\s*(-?\\d+)");
+    /*
+     * The client sends a button's payload merged with the dialog's input values in one compound,
+     * so the ids use names no input can have (inputs never start with "dcs_").
+     */
+    private static final String TOKEN_KEY = "dcs_t", BUTTON_KEY = "dcs_b";
+    private static final Pattern TOKEN = Pattern.compile("(?:^|[{,\\s])dcs_t\\s*:\\s*\"?(-?\\d+)");
+    private static final Pattern BUTTON = Pattern.compile("(?:^|[{,\\s])dcs_b\\s*:\\s*\"?(-?\\d+)");
     /** A background redraw (e.g. a leaderboard that finished loading) only shows if the player clicked recently. */
     private static final long REDRAW_WINDOW_MS = 5000;
 
@@ -102,6 +107,11 @@ final class DialogMenus implements Menus.Renderer, Listener {
 
     @Override
     public void show(Player player, Menu menu, Pages.View view, boolean userAction) {
+        draw(player, menu, view, userAction, false);
+    }
+
+    /** keepToken: a redraw of the same screen (the changing flag) - a click already on its way still counts. */
+    private void draw(Player player, Menu menu, Pages.View view, boolean userAction, boolean keepToken) {
         Session old = sessions.get(player.getUniqueId());
         long now = System.currentTimeMillis();
         if (!userAction && (old == null || now - old.lastUserAction > REDRAW_WINDOW_MS)) return;
@@ -112,14 +122,17 @@ final class DialogMenus implements Menus.Renderer, Listener {
         List<Menu.Button> all = new ArrayList<>(menu.buttons);
         all.addAll(menu.nav);
         if (menu.back != null) all.add(menu.back);
-        Session session = new Session(tokens.getAndIncrement(), menu, view, all);
+        int token = keepToken && old != null ? old.token : tokens.getAndIncrement();
+        Session session = new Session(token, menu, view, all);
         session.lastUserAction = userAction ? now : old != null ? old.lastUserAction : now;
         session.lastClick = old != null ? old.lastClick : 0;
 
         List<ActionButton> actions = new ArrayList<>();
         for (int i = 0; i < all.size(); i++) actions.add(button(player, all.get(i), session.token, i, icons, bedrock));
-        ActionButton exit = null;
-        if (menu.close != null) exit = button(player, menu.close, session.token, -1, icons, bedrock);
+        // Every dialog gets a Close footer: it is also what Escape sends, so we know the dialog closed
+        Menu.Button close = menu.close != null ? menu.close
+                : Menu.Button.of(Menu.Icon.of("BARRIER"), text().raw("menu.button.close"), null, null, null).width(120);
+        ActionButton exit = button(player, close, session.token, -1, icons, bedrock);
 
         List<DialogBody> body = new ArrayList<>();
         if (!menu.body.isEmpty()) {
@@ -146,9 +159,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
                         .body(body)
                         .inputs(inputs)
                         .build())
-                .type(exitAction == null
-                        ? DialogType.multiAction(actions).columns(Math.max(1, menu.columns)).build()
-                        : DialogType.multiAction(actions).columns(Math.max(1, menu.columns)).exitAction(exitAction).build()));
+                .type(DialogType.multiAction(actions).columns(Math.max(1, menu.columns)).exitAction(exitAction).build()));
 
         Session previous = sessions.put(player.getUniqueId(), session);
         if (previous != null && previous.animator != null) {
@@ -168,7 +179,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
         if (b.status() != null && !b.status().isEmpty()) label = label.append(Component.text("  ")).append(text().parse(b.status(), null));
         ActionButton.Builder builder = ActionButton.builder(label).width(Math.max(60, Math.min(1024, b.width())));
         if (b.tooltip() != null && !b.tooltip().isEmpty()) builder.tooltip(text().parse(b.tooltip(), null));
-        BinaryTagHolder payload = BinaryTagHolder.binaryTagHolder("{t:" + token + ",b:" + index + "}");
+        BinaryTagHolder payload = BinaryTagHolder.binaryTagHolder("{" + TOKEN_KEY + ":\"" + token + "\"," + BUTTON_KEY + ":\"" + index + "\"}");
         return builder.action(DialogAction.customClick(CLICK, payload)).build();
     }
 
@@ -218,7 +229,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
                             .width(300)
                             .build();
                 }
-                yield DialogInput.text(in.key(), label).initial(Shop.format(v)).maxLength(16).width(300).build();
+                yield DialogInput.text(in.key(), label).initial(Shop.format(v)).maxLength(32).width(300).build();
             }
             case CHOICE -> {
                 List<SingleOptionDialogInput.OptionEntry> entries = new ArrayList<>();
@@ -263,7 +274,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
                 return;
             }
             long lastAction = now.lastUserAction;
-            show(player, menus.build(player, Pages.View.of("main"), true), Pages.View.of("main"), true);
+            draw(player, menus.build(player, Pages.View.of("main"), true), Pages.View.of("main"), true, true);
             Session after = sessions.get(player.getUniqueId());
             if (after != null) after.lastUserAction = lastAction; // a redraw is not a click
         }, period, period);
@@ -277,21 +288,34 @@ final class DialogMenus implements Menus.Renderer, Listener {
         PlayerCommonConnection connection = event.getCommonConnection();
         if (!(connection instanceof PlayerGameConnection game)) return;
         Player player = game.getPlayer();
+        DialogResponseView response = event.getDialogResponseView();
         BinaryTagHolder tag = event.getTag();
         String payload = tag == null ? "" : tag.string();
-        Matcher t = TOKEN.matcher(payload);
-        Matcher b = BUTTON.matcher(payload);
-        if (!t.find() || !b.find()) return;
-        int token;
-        int index;
-        try {
-            token = Integer.parseInt(t.group(1));
-            index = Integer.parseInt(b.group(1));
-        } catch (NumberFormatException e) {
-            return;
-        }
-        DialogResponseView response = event.getDialogResponseView();
+        Integer token = id(response, TOKEN_KEY, TOKEN, payload);
+        Integer index = id(response, BUTTON_KEY, BUTTON, payload);
+        if (token == null || index == null) return;
         platform.forPlayer(player, () -> click(player, token, index, response));
+    }
+
+    /** One of our ids from the click: read as a named value, or found in the raw payload. */
+    private static Integer id(DialogResponseView response, String key, Pattern pattern, String payload) {
+        String raw = null;
+        if (response != null) {
+            try {
+                raw = response.getText(key);
+            } catch (RuntimeException ignored) {
+            }
+        }
+        if (raw == null) {
+            Matcher m = pattern.matcher(payload);
+            if (m.find()) raw = m.group(1);
+        }
+        if (raw == null) return null;
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /** The values of this dialog's own inputs. */
@@ -328,10 +352,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
         Session s = sessions.get(player.getUniqueId());
         if (s == null || s.token != token) return; // an older dialog, or not ours
         long now = System.currentTimeMillis();
-        if (now - s.lastClick < plugin.config().clickCooldownMs) return;
-        s.lastClick = now;
-        s.lastUserAction = now;
-        if (index == -1) { // Close / Escape
+        if (index == -1) { // Close / Escape: never dropped by the cooldown
             if (s.animator != null) s.animator.cancel();
             s.animator = null;
             sessions.remove(player.getUniqueId());
@@ -339,6 +360,9 @@ final class DialogMenus implements Menus.Renderer, Listener {
             player.closeDialog();
             return;
         }
+        if (now - s.lastClick < plugin.config().clickCooldownMs) return;
+        s.lastClick = now;
+        s.lastUserAction = now;
         if (index < 0 || index >= s.buttons.size()) return;
         Map<String, Object> mine = readInputs(s.menu, response);
         Menu.Button button = s.buttons.get(index);

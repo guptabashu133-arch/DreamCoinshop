@@ -26,8 +26,10 @@ final class RedisStorage implements Storage {
 
     private static final int TIMEOUT_MS = 5000;
 
+    /** KEYS: player hash, top set, op key. ARGV: column, delta, uuid, op id ('' = none). */
     private static final String ADD =
-            "local v = tonumber(redis.call('HINCRBYFLOAT', KEYS[1], ARGV[1], ARGV[2])) "
+            "if ARGV[4] ~= '' and not redis.call('SET', KEYS[3], '1', 'NX', 'EX', '86400') then return 'dup' end "
+            + "local v = tonumber(redis.call('HINCRBYFLOAT', KEYS[1], ARGV[1], ARGV[2])) "
             + "if v < 0 then v = 0 redis.call('HSET', KEYS[1], ARGV[1], '0') end "
             + "redis.call('ZADD', KEYS[2], v, ARGV[3]) return tostring(v)";
 
@@ -170,8 +172,9 @@ final class RedisStorage implements Storage {
     }
 
     @Override
-    public void addBalance(UUID uuid, Currency currency, double delta) throws IOException {
-        call("EVAL", ADD, "2", playerKey(uuid), topKey(currency), currency.column, fmt(delta), uuid.toString());
+    public void addBalance(UUID uuid, Currency currency, double delta, String opId) throws IOException {
+        call("EVAL", ADD, "3", playerKey(uuid), topKey(currency), prefix + "op:" + (opId == null ? "-" : opId),
+                currency.column, fmt(delta), uuid.toString(), opId == null ? "" : opId);
     }
 
     @Override

@@ -22,6 +22,7 @@ import java.util.UUID;
  *   active   uuid, category, item          - what they have equipped (one per category)
  *   changes  id, uuid, origin              - "this player changed" notices for the other servers
  *   meta     k, v                          - e.g. whether the old yml files were imported
+ *   ops      id                            - ids of applied balance changes (safe retries), kept a day
  */
 final class SqlStorage implements Storage {
 
@@ -33,7 +34,7 @@ final class SqlStorage implements Storage {
 
     private final Dialect dialect;
     private final ConnectionFactory factory;
-    private final String players, unlocks, active, changes, meta;
+    private final String players, unlocks, active, changes, meta, ops;
     private Connection connection;
 
     SqlStorage(Dialect dialect, ConnectionFactory factory, String prefix) {
@@ -47,6 +48,7 @@ final class SqlStorage implements Storage {
         this.active = prefix + "active";
         this.changes = prefix + "changes";
         this.meta = prefix + "meta";
+        this.ops = prefix + "ops";
     }
 
     @Override
@@ -110,6 +112,7 @@ final class SqlStorage implements Storage {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + changes + " (" + id + ", uuid VARCHAR(36) NOT NULL, "
                     + "origin VARCHAR(64) NOT NULL, created_at BIGINT NOT NULL)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + meta + " (k VARCHAR(64) NOT NULL PRIMARY KEY, v " + text + ")");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + ops + " (id VARCHAR(36) NOT NULL PRIMARY KEY, created_at BIGINT NOT NULL)");
         }
         createIndex(players + "_name", players, "name_lower");
         createIndex(players + "_coins", players, "coins");
@@ -188,15 +191,42 @@ final class SqlStorage implements Storage {
     }
 
     @Override
-    public synchronized void addBalance(UUID uuid, Currency currency, double delta) throws SQLException {
-        ensurePlayer(uuid);
-        String col = currency.column;
-        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + players + " SET " + col + " = "
-                + max() + "(" + col + " + ?, 0), updated_at = ? WHERE uuid = ?")) {
-            ps.setDouble(1, delta);
-            ps.setLong(2, System.currentTimeMillis());
-            ps.setString(3, uuid.toString());
-            ps.executeUpdate();
+    public synchronized void addBalance(UUID uuid, Currency currency, double delta, String opId) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            if (opId != null) {
+                try (PreparedStatement ps = c.prepareStatement(insertIgnore(ops, "id, created_at", "?, ?", "id"))) {
+                    ps.setString(1, opId);
+                    ps.setLong(2, System.currentTimeMillis());
+                    if (ps.executeUpdate() == 0) { // already applied (a retry after a timeout)
+                        c.rollback();
+                        return;
+                    }
+                }
+            }
+            ensurePlayer(uuid);
+            String col = currency.column;
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + players + " SET " + col + " = "
+                    + max() + "(" + col + " + ?, 0), updated_at = ? WHERE uuid = ?")) {
+                ps.setDouble(1, delta);
+                ps.setLong(2, System.currentTimeMillis());
+                ps.setString(3, uuid.toString());
+                ps.executeUpdate();
+            }
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException ignored) {
+            }
+            throw e;
+        } finally {
+            try {
+                c.setAutoCommit(auto);
+            } catch (SQLException ignored) {
+            }
         }
     }
 
@@ -382,6 +412,10 @@ final class SqlStorage implements Storage {
     public synchronized void prune(long olderThanMillis) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + changes + " WHERE created_at < ?")) {
             ps.setLong(1, olderThanMillis);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + ops + " WHERE created_at < ?")) {
+            ps.setLong(1, System.currentTimeMillis() - 24L * 3600 * 1000);
             ps.executeUpdate();
         }
     }

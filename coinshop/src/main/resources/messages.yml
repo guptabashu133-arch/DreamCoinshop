@@ -15,8 +15,13 @@ general:
   invalid-amount: "<shadow:black><red>That's not a valid amount.</red></shadow>"
   amount-must-be-positive: "<shadow:black><red>Amount must be positive.</red></shadow>"
   reloaded: "<shadow:black><green>Dreamcoinshop reloaded (config.yml, messages.yml, sounds.yml).</green></shadow>"
+  reload-broken: "<shadow:black><red>config.yml has a mistake (see the console) - nothing was reloaded, the old settings stay in use.</red></shadow>"
   reload-storage: "<shadow:black><yellow>The storage settings changed - restart the server to use the new database.</yellow></shadow>"
   database-down: "<shadow:black><red>The shop is closed: the database can't be reached. Tell an admin.</red></shadow>"
+  import-confirm: "<shadow:black><yellow>This imports this server's old coins.yml / orbs.yml / playerdata into the database, replacing the balances and unlocks of the players in them. Type <white>/coinshop import confirm</white> to do it.</yellow></shadow>"
+  # <count>
+  import-done: "<shadow:black><green>Imported <white><count></white> players from the old yml files.</green></shadow>"
+  import-none: "<shadow:black><gray>There are no old coins.yml / orbs.yml / playerdata files in this server's folder.</gray></shadow>"
   no-dialogs: "<shadow:black><yellow>Dialog menus need Paper 1.21.6+ and a 1.21.6+ client - opening the chest menu.</yellow></shadow>"
 
 # /coin ...
@@ -105,6 +110,7 @@ settings:
   saved: "<shadow:black><green>Settings saved.</green></shadow>"
   # <setting>
   bad-number: "<shadow:black><red><setting>: that's not a number - kept the old value.</red></shadow>"
+  config-broken: "<shadow:black><red>config.yml has a mistake (see the console), so nothing was saved. Fix the file first.</red></shadow>"
   only-dialog: "<shadow:black><yellow>Change this one with /coinshop dialog or in config.yml.</yellow></shadow>"
 
 # ------------------------------------------------------------------

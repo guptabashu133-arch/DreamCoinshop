@@ -397,7 +397,7 @@ final class Pages {
                 String state = msg(on ? "menu.setting-on" : "menu.setting-off");
                 m.add(new Menu.Button(Menu.Icon.of(on ? d.icon() : "GRAY_DYE"), "<yellow>" + msg("menu.setting." + d.id()), state,
                         null, List.of(msg("menu.toggle-lore", "state", state)), on, 200, (p, c, in) ->
-                        settings.apply(Map.of(d.path(), !on), () -> {
+                        settings.apply(Map.of(d.path(), !on), p, () -> {
                             plugin.sounds().play(p, "settings-saved");
                             menus.refresh(p);
                         })));
@@ -436,7 +436,7 @@ final class Pages {
                 return;
             }
         }
-        plugin.settings().apply(Map.of(d.path(), next), () -> {
+        plugin.settings().apply(Map.of(d.path(), next), p, () -> {
             plugin.sounds().play(p, "settings-saved");
             menus.refresh(p);
         });
@@ -476,7 +476,7 @@ final class Pages {
                 }
             }
         }
-        settings.apply(changes, () -> {
+        settings.apply(changes, p, () -> {
             text().send(p, "settings.saved", null);
             plugin.sounds().play(p, "settings-saved");
             menus.refresh(p);
@@ -518,7 +518,7 @@ final class Pages {
         if (dialog) {
             for (Map.Entry<String, Double> e : prices.entrySet()) {
                 m.inputs.add(new Menu.Input("p_" + inputSafe(e.getKey()), Menu.InputType.TEXT,
-                        Text.plain(settings.priceName(section, e.getKey())), Shop.format(e.getValue()), 0, 16, 0, List.of()));
+                        Text.plain(settings.priceName(section, e.getKey())), Shop.format(e.getValue()), 0, 32, 0, List.of()));
             }
             m.add(Menu.Button.of(Menu.Icon.of("LIME_DYE"), msg("menu.button.save"), null, null, (p, c, in) -> {
                 Map<String, Object> changes = new LinkedHashMap<>();
@@ -532,7 +532,7 @@ final class Pages {
                         changes.put(section.path() + "." + e.getKey() + ".price", Settings.storePrice(v));
                     }
                 }
-                settings.apply(changes, () -> {
+                settings.apply(changes, p, () -> {
                     text().send(p, "settings.saved", null);
                     plugin.sounds().play(p, "settings-saved");
                     menus.refresh(p);
@@ -549,7 +549,7 @@ final class Pages {
                     null, List.of(msg("menu.price-lore", "price", Shop.format(price), "step", Shop.format(step))), false, 200,
                     (p, c, in) -> {
                         double d = step * (c.shift() ? 10 : 1) * (c.right() ? -1 : 1);
-                        settings.apply(Map.of(section.path() + "." + e.getKey() + ".price", Settings.storePrice(price + d)), () -> {
+                        settings.apply(Map.of(section.path() + "." + e.getKey() + ".price", Settings.storePrice(price + d)), p, () -> {
                             plugin.sounds().play(p, "settings-saved");
                             menus.refresh(p);
                         });

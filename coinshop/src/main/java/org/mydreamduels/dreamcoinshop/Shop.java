@@ -219,9 +219,7 @@ final class Shop {
     }
 
     private void refund(Player player, Currency c, double amount) {
-        Profile p = plugin.data().online(player.getUniqueId());
-        if (p != null) plugin.data().add(p, c, amount);
-        else plugin.data().writeOffline(player.getUniqueId(), s -> s.addBalance(player.getUniqueId(), c, amount));
+        plugin.data().addAnywhere(player.getUniqueId(), c, amount);
     }
 
     /** Console commands on the main/global thread; then reports whether all of them ran. */

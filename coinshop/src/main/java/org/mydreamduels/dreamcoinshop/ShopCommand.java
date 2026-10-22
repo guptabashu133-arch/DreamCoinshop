@@ -28,9 +28,26 @@ final class ShopCommand implements TabExecutor {
                 text.send(sender, "general.no-permission", null);
                 return true;
             }
-            boolean storageChanged = plugin.reloadAll();
+            int result = plugin.reloadAll();
+            if (result < 0) {
+                text.send(sender, "general.reload-broken", null);
+                return true;
+            }
             text.send(sender, "general.reloaded", null);
-            if (storageChanged) text.send(sender, "general.reload-storage", null);
+            if (result == 1) text.send(sender, "general.reload-storage", null);
+            return true;
+        }
+        if (!orbshop && sub.equals("import")) {
+            if (!sender.hasPermission("dreamcoinshop.admin")) {
+                text.send(sender, "general.no-permission", null);
+            } else if (args.length < 2 || !args[1].equalsIgnoreCase("confirm")) {
+                text.send(sender, "general.import-confirm", null);
+            } else {
+                plugin.data().forceImport().whenComplete((n, err) -> {
+                    if (err != null) text.sendMini(sender, "<red>" + Text.escape(String.valueOf(err.getMessage())), null);
+                    else text.send(sender, n > 0 ? "general.import-done" : "general.import-none", Ph.of("count", n));
+                });
+            }
             return true;
         }
         if (!(sender instanceof Player player)) {
@@ -75,7 +92,10 @@ final class ShopCommand implements TabExecutor {
         if (command.getName().equalsIgnoreCase("orbshop") || args.length != 1) return out;
         List<String> subs = new ArrayList<>(List.of("gui", "dialog", "flags"));
         if (sender.hasPermission("dreamcoinshop.settings")) subs.add("settings");
-        if (sender.hasPermission("dreamcoinshop.admin")) subs.add("reload");
+        if (sender.hasPermission("dreamcoinshop.admin")) {
+            subs.add("reload");
+            subs.add("import");
+        }
         for (String s : subs) if (s.startsWith(args[0].toLowerCase(Locale.ROOT))) out.add(s);
         return out;
     }

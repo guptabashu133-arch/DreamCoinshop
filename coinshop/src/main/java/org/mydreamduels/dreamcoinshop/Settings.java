@@ -59,7 +59,7 @@ final class Settings {
     static final List<Def> VALUES = List.of(
             number("flag-price", "flags.price", "WHITE_BANNER", 0, 10_000_000, 100),
             number("orb-interval", "orbs.payout.interval-minutes", "CLOCK", 1, 1440, 1),
-            number("orb-amount", "orbs.payout.amount", "ENDER_PEARL", 0, 100_000, 1),
+            number("orb-amount", "orbs.payout.amount", "ENDER_PEARL", 0, 100_000, 0.5),
             number("rotate-seconds", "flags.rotate.seconds", "COMPASS", 1, 60, 1),
             number("top-size", "top.size", "DIAMOND", 1, 45, 1),
             number("click-cooldown", "menu.click-cooldown-ms", "LEVER", 0, 2000, 50),
@@ -187,12 +187,22 @@ final class Settings {
      * Saves changes (config path -> value) and reloads the settings, then runs then (on the
      * main/global thread, where config.yml is safe to write).
      */
-    void apply(Map<String, Object> changes, Runnable then) {
+    void apply(Map<String, Object> changes, org.bukkit.entity.Player who, Runnable then) {
         if (changes.isEmpty()) {
             if (then != null) platform.global(then);
             return;
         }
         platform.global(() -> {
+            // Start from the file as it is now, so edits made to it by hand (or the license key the
+            // plugin wrote) are kept; and never save over a file that has a mistake in it
+            try {
+                ShopConfig.parse(new java.io.File(plugin.getDataFolder(), "config.yml"));
+            } catch (ShopConfig.BrokenConfig e) {
+                plugin.getLogger().severe(e.getMessage());
+                if (who != null) plugin.text().send(who, "settings.config-broken", null);
+                return;
+            }
+            plugin.reloadConfig();
             FileConfiguration cfg = plugin.getConfig();
             boolean configChanged = false;
             for (Map.Entry<String, Object> e : changes.entrySet()) {

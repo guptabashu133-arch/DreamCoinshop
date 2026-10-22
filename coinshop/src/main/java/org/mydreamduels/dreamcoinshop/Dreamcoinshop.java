@@ -46,7 +46,15 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         platform = Platform.create(this);
         bedrock = new BedrockDetector(getLogger());
         ShopConfig cfg = new ShopConfig();
-        cfg.load(this);
+        try {
+            cfg.load(this);
+        } catch (ShopConfig.BrokenConfig e) {
+            // Without a readable config we don't know which database to use: better stop than split the data
+            getLogger().severe(e.getMessage());
+            getLogger().severe("Fix config.yml and restart. Dreamcoinshop is disabled; nothing was changed.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         config = cfg;
         text = Capabilities.ADVENTURE ? new AdventureText(this, platform) : new LegacyText(this, platform);
         sounds = new Sounds(this, platform);
@@ -98,6 +106,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (config == null) return; // never started (broken config.yml)
         if (license != null) license.stop();
         if (orbTask != null) orbTask.cancel();
         if (menus != null) menus.closeAll();
@@ -247,11 +256,19 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
 
     // ------------------------------------------------------------------ reload
 
-    /** Re-reads config.yml, messages.yml and sounds.yml and applies them. Main/global thread. */
-    void reloadSettings() {
+    /**
+     * Re-reads config.yml, messages.yml and sounds.yml and applies them. Main/global thread.
+     * False if config.yml has a mistake: then the settings in use stay as they are.
+     */
+    boolean reloadSettings() {
         ShopConfig old = config;
         ShopConfig cfg = new ShopConfig();
-        cfg.load(this);
+        try {
+            cfg.load(this);
+        } catch (ShopConfig.BrokenConfig e) {
+            getLogger().severe(e.getMessage() + " - keeping the settings in use until it's fixed.");
+            return false;
+        }
         config = cfg;
         text.reload();
         sounds.reload();
@@ -263,14 +280,15 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
             Profile prof = data.online(p.getUniqueId());
             if (prof != null && prof.isLoaded()) applyLoaded(prof);
         }
+        return true;
     }
 
-    /** /coinshop reload. True if the storage settings changed (those need a restart). */
-    boolean reloadAll() {
+    /** /coinshop reload: 0 = done, 1 = done but the storage settings changed (need a restart), -1 = config.yml broken. */
+    int reloadAll() {
         ShopConfig.Storage before = config.storage;
         menus.closeAll();
-        reloadSettings();
-        return !before.equals(config.storage);
+        if (!reloadSettings()) return -1;
+        return before.equals(config.storage) ? 0 : 1;
     }
 
     // ------------------------------------------------------------------ access

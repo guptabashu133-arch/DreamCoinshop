@@ -95,6 +95,11 @@ final class Profile {
         else active.put(c, item);
     }
 
+    /** Memory may differ from the database (a write failed): the shop waits until it's reloaded. */
+    synchronized void markStale() {
+        loaded = false;
+    }
+
     synchronized void beginWrite() {
         pendingWrites++;
     }

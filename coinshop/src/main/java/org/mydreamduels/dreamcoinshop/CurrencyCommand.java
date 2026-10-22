@@ -59,6 +59,10 @@ final class CurrencyCommand implements TabExecutor {
             text().send(sender, "general.no-permission", null);
             return true;
         }
+        if (!plugin.data().isReady()) {
+            text().send(sender, "general.database-down", null); // a change now couldn't be saved
+            return true;
+        }
         if (sub.equals("giveall")) {
             if (args.length < 2) {
                 text().send(sender, section + ".usage-giveall", null);
@@ -90,25 +94,21 @@ final class CurrencyCommand implements TabExecutor {
             return;
         }
         DataManager data = plugin.data();
-        Profile here = data.online(uuid);
         Player online = Bukkit.getPlayer(uuid);
         String name = online != null ? online.getName() : targetName;
         Ph ph = Ph.of("amount", Shop.format(amount), "player", name);
         switch (sub) {
             case "give" -> {
-                if (here != null) data.add(here, currency, amount);
-                else data.writeOffline(uuid, s -> s.addBalance(uuid, currency, amount));
+                data.addAnywhere(uuid, currency, amount);
                 text().send(sender, section + ".gave", ph);
                 if (online != null) text().send(online, section + ".received", ph);
             }
             case "remove" -> {
-                if (here != null) data.add(here, currency, -amount);
-                else data.writeOffline(uuid, s -> s.addBalance(uuid, currency, -amount));
+                data.addAnywhere(uuid, currency, -amount);
                 text().send(sender, section + ".removed", ph);
             }
             case "set" -> {
-                if (here != null) data.set(here, currency, amount);
-                else data.writeOffline(uuid, s -> s.setBalance(uuid, currency, amount));
+                data.setAnywhere(uuid, currency, amount);
                 text().send(sender, section + ".set", ph);
             }
             default -> help(sender, currency == Currency.COINS ? "coin" : "orb");

@@ -21,7 +21,19 @@ final class MessageFile {
     static YamlConfiguration load(JavaPlugin plugin, String name) {
         File file = new File(plugin.getDataFolder(), name);
         if (!file.exists()) plugin.saveResource(name, false);
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration yaml;
+        try {
+            yaml = ShopConfig.parse(file);
+        } catch (ShopConfig.BrokenConfig e) {
+            // Never "repair" a file with a typo by saving defaults over it: use the defaults in memory only
+            plugin.getLogger().severe(e.getMessage() + " - using the built-in texts until it's fixed (your file was not changed).");
+            yaml = new YamlConfiguration();
+            try (InputStream in = plugin.getResource(name)) {
+                if (in != null) yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
+            } catch (Exception ignored) {
+            }
+            return yaml;
+        }
         try (InputStream in = plugin.getResource(name)) {
             if (in != null) {
                 YamlConfiguration defaults = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
