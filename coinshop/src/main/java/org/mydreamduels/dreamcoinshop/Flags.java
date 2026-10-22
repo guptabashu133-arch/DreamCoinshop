@@ -141,6 +141,15 @@ final class Flags {
         return s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
+    /** The next count flags the Flags button will show after the current one. */
+    List<Country> upcoming(ShopConfig cfg, long nowMillis, int count) {
+        List<Country> list = forSale(cfg);
+        List<Country> out = new ArrayList<>();
+        long step = Math.max(1, cfg.flagsRotateSeconds) * 1000L;
+        for (int i = 1; i <= count && i < list.size(); i++) out.add(rotating(cfg, nowMillis + i * step));
+        return out;
+    }
+
     /** The flag shown right now on the main menu's Flags button: changes every rotate.seconds. */
     Country rotating(ShopConfig cfg, long nowMillis) {
         List<Country> list = forSale(cfg);

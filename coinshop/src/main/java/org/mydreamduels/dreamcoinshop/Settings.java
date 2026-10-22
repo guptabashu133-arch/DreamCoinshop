@@ -62,6 +62,7 @@ final class Settings {
             number("orb-amount", "orbs.payout.amount", "ENDER_PEARL", 0, 100_000, 0.5),
             number("rotate-seconds", "flags.rotate.seconds", "COMPASS", 1, 60, 1),
             number("top-size", "top.size", "DIAMOND", 1, 45, 1),
+            number("top-full-size", "top.full-size", "BOOK", 10, 100, 5),
             number("click-cooldown", "menu.click-cooldown-ms", "LEVER", 0, 2000, 50),
             choice("menu-style", "menu.style", "CHEST", List.of("AUTO", "DIALOG", "GUI")),
             choice("bedrock-style", "menu.bedrock-style", "CHEST", List.of("GUI", "DIALOG")),
@@ -135,6 +136,7 @@ final class Settings {
             case "orb-amount" -> c.orbAmount;
             case "rotate-seconds" -> (double) c.flagsRotateSeconds;
             case "top-size" -> (double) c.topSize;
+            case "top-full-size" -> (double) c.topFullSize;
             case "click-cooldown" -> (double) c.clickCooldownMs;
             case "menu-style" -> c.menuStyle.name();
             case "bedrock-style" -> c.bedrockStyle.name();

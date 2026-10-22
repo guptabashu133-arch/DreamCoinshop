@@ -102,6 +102,7 @@ final class ShopConfig {
     boolean orbMessage = true;
 
     int topSize = 10;
+    int topFullSize = 50;
     int topRefreshSeconds = 30;
 
     Storage storage;
@@ -203,6 +204,7 @@ final class ShopConfig {
         orbMessage = cfg.getBoolean("orbs.payout.message", true);
 
         topSize = clamp(cfg.getInt("top.size", 10), 1, 45);
+        topFullSize = clamp(cfg.getInt("top.full-size", 50), topSize, 100);
         topRefreshSeconds = clamp(cfg.getInt("top.refresh-seconds", 30), 5, 3600);
 
         String type = cfg.getString("storage.type", "SQLITE").trim().toUpperCase(Locale.ROOT);

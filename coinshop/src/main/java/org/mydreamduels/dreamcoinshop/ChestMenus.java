@@ -174,6 +174,8 @@ final class ChestMenus implements Menus.Renderer, Listener {
         ItemStack stack;
         if (icon != null && icon.flag() != null) {
             stack = head(icon.flag()).clone();
+        } else if (icon != null && icon.player() != null) {
+            stack = playerHead(icon.player());
         } else {
             stack = new ItemStack(material(icon == null ? null : icon.material(), Material.PAPER));
         }
@@ -192,6 +194,21 @@ final class ChestMenus implements Menus.Renderer, Listener {
         return m == null || !m.isItem() || m.isAir() ? fallback : m;
     }
 
+    /** A player's head: their own skin when online, otherwise the client looks it up. */
+    private ItemStack playerHead(UUID id) {
+        ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
+        try {
+            SkullMeta meta = (SkullMeta) stack.getItemMeta();
+            // An online player's skin comes with them (offline-mode servers and skin plugins too)
+            Player online = Bukkit.getPlayer(id);
+            meta.setOwningPlayer(online != null ? online : Bukkit.getOfflinePlayer(id));
+            stack.setItemMeta(meta);
+        } catch (Exception e) {
+            plugin.getLogger().fine("Could not make the head of " + id + ": " + e.getMessage());
+        }
+        return stack;
+    }
+
     /** A head with the flag picture (cached, cloned for each use). */
     private ItemStack head(Flags.Country country) {
         return heads.computeIfAbsent(country.code(), code -> {
@@ -200,7 +217,9 @@ final class ChestMenus implements Menus.Renderer, Listener {
             try {
                 SkullMeta meta = (SkullMeta) stack.getItemMeta();
                 UUID id = UUID.nameUUIDFromBytes(("dreamcoinshop:flag_" + code).getBytes(StandardCharsets.UTF_8));
-                PlayerProfile profile = Bukkit.createPlayerProfile(id, "flag_" + code);
+                // No name: a profile with a name can be filled in with the skin of the real
+                // account of that name, which would show a player instead of the flag
+                PlayerProfile profile = Bukkit.createPlayerProfile(id);
                 PlayerTextures textures = profile.getTextures();
                 textures.setSkin(new URL(country.textureUrl()));
                 profile.setTextures(textures);

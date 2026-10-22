@@ -32,14 +32,21 @@ final class Menu {
         void run(Player player, Click click, Map<String, Object> inputs);
     }
 
-    /** An item picture: a material name, or a country flag (a head). */
-    record Icon(String material, Flags.Country flag) {
+    /**
+     * An item picture: a material name, a country flag (a head), or a player's head. badge: a
+     * flag shown next to the picture (dialogs) / in the item lore (chest menus).
+     */
+    record Icon(String material, Flags.Country flag, java.util.UUID player, String playerName, Flags.Country badge) {
         static Icon of(String material) {
-            return new Icon(material, null);
+            return new Icon(material, null, null, null, null);
         }
 
         static Icon flag(Flags.Country flag) {
-            return new Icon("PLAYER_HEAD", flag);
+            return new Icon("PLAYER_HEAD", flag, null, null, null);
+        }
+
+        static Icon player(java.util.UUID player, String name, Flags.Country badge) {
+            return new Icon("PLAYER_HEAD", null, player, name, badge);
         }
     }
 
@@ -84,6 +91,8 @@ final class Menu {
     /** Main menu only: a Close button (dialogs). */
     Button close;
     int columns = 2;
+    /** Flags drawn small under the body, so the client has their pictures before they're needed. */
+    final List<Flags.Country> preload = new ArrayList<>();
     /** Inputs shown at the top of a dialog. */
     final List<Input> inputs = new ArrayList<>();
     /** The info item of a chest menu (top middle). */

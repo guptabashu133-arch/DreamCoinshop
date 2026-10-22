@@ -273,7 +273,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         text.reload();
         sounds.reload();
         data.topRefreshSeconds(cfg.topRefreshSeconds);
-        if (old.topSize != cfg.topSize) data.invalidateTops();
+        if (old.topSize != cfg.topSize || old.topFullSize != cfg.topFullSize) data.invalidateTops();
         registerChat();
         startOrbTimer();
         for (Player p : Bukkit.getOnlinePlayers()) {

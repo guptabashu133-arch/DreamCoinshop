@@ -323,13 +323,15 @@ final class SqlStorage implements Storage {
     public synchronized List<TopEntry> top(Currency currency, int limit) throws SQLException {
         List<TopEntry> out = new ArrayList<>();
         String col = currency.column;
-        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, " + col + " FROM " + players
-                + " WHERE " + col + " > 0 ORDER BY " + col + " DESC LIMIT ?")) {
-            ps.setInt(1, Math.max(1, limit));
+        try (PreparedStatement ps = conn().prepareStatement("SELECT p.uuid, p.name, p." + col + ", a.item FROM " + players + " p"
+                + " LEFT JOIN " + active + " a ON a.uuid = p.uuid AND a.category = ?"
+                + " WHERE p." + col + " > 0 ORDER BY p." + col + " DESC LIMIT ?")) {
+            ps.setString(1, Category.FLAG.id);
+            ps.setInt(2, Math.max(1, limit));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     try {
-                        out.add(new TopEntry(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getDouble(3)));
+                        out.add(new TopEntry(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getDouble(3), rs.getString(4)));
                     } catch (IllegalArgumentException ignored) {
                     }
                 }

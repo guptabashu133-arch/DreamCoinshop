@@ -213,7 +213,8 @@ final class RedisStorage implements Storage {
                 try {
                     UUID uuid = UUID.fromString(String.valueOf(list.get(i)));
                     Object name = call("HGET", playerKey(uuid), "name");
-                    out.add(new TopEntry(uuid, name == null ? null : String.valueOf(name), score));
+                    Object flag = call("HGET", activeKey(uuid), Category.FLAG.id);
+                    out.add(new TopEntry(uuid, name == null ? null : String.valueOf(name), score, flag == null ? null : String.valueOf(flag)));
                 } catch (IllegalArgumentException ignored) {
                 }
             }

@@ -91,8 +91,8 @@ final class Pages {
             case "sellwands" -> wands(view, dialog, false);
             case "spawnerwands" -> wands(view, dialog, true);
             case "buycoins" -> buyCoins();
-            case "topcoins" -> top(player, Currency.COINS);
-            case "orbstop" -> top(player, Currency.ORBS);
+            case "topcoins" -> top(player, Currency.COINS, view, dialog);
+            case "orbstop" -> top(player, Currency.ORBS, view, dialog);
             case "orbshop" -> orbShop(profile, view, dialog);
             case "settings" -> settings(player, view, dialog);
             case "prices" -> view.arg() == null ? pricePick() : prices(view, dialog);
@@ -111,8 +111,10 @@ final class Pages {
             if (!cfg.section(section)) continue;
             Menu.Icon icon = Menu.Icon.of(SECTION_ICONS.get(section));
             if (section.equals("flags")) {
-                Flags.Country shown = plugin.flags().rotating(cfg, System.currentTimeMillis());
+                long now = System.currentTimeMillis();
+                Flags.Country shown = plugin.flags().rotating(cfg, now);
                 if (shown != null) icon = Menu.Icon.flag(shown);
+                if (cfg.flagsRotate) m.preload.addAll(plugin.flags().upcoming(cfg, now, 4));
             }
             m.add(Menu.Button.of(icon, msg("menu.button." + section), null,
                     "<gray>" + Text.escape(cfg.description(section, "")),
@@ -293,29 +295,47 @@ final class Pages {
 
     // ------------------------------------------------------------------ top lists
 
-    private Menu top(Player player, Currency currency) {
+    /** Top 10 (top.size) or, with arg "full", the full leaderboard (top.full-size). */
+    private Menu top(Player player, Currency currency, View view, boolean dialog) {
         boolean orbs = currency == Currency.ORBS;
+        boolean full = "full".equals(view.arg());
+        String id = orbs ? "orbstop" : "topcoins";
         Menu m = new Menu(orbs ? cfg().title("orbstop", "<light_purple><bold>Orbs Top") : cfg().title("topcoins", "<gold><bold>Top Coins"));
-        m.back = back(View.of(orbs ? "orbshop" : "main"));
+        m.back = back(full ? View.of(id) : View.of(orbs ? "orbshop" : "main"));
         m.infoIcon = Menu.Icon.of(orbs ? "ENDER_PEARL" : "DIAMOND");
         DataManager data = plugin.data();
-        int size = cfg().topSize;
-        data.refreshTop(currency, size, () -> menus.refreshIfViewing(player, orbs ? "orbstop" : "topcoins"));
+        int size = full ? cfg().topFullSize : cfg().topSize;
+        data.refreshTop(currency, cfg().topFullSize, () -> menus.refreshIfViewing(player, id));
         if (!data.topLoaded(currency)) {
             m.body(msg("menu.top-loading"));
             return m;
         }
-        List<Storage.TopEntry> top = data.top(currency);
+        List<Storage.TopEntry> all = data.top(currency);
+        List<Storage.TopEntry> top = all.subList(0, Math.min(size, all.size()));
         if (top.isEmpty()) {
             m.body(msg(orbs ? "menu.top-empty-orbs" : "menu.top-empty"));
             return m;
         }
-        boolean shownSelf = false;
-        int rank = 1;
-        for (Storage.TopEntry e : top) {
-            if (rank > size) break;
+        if (full) m.body(msg("menu.top-full-intro", "size", size));
+
+        // Where am I? (also when I'm below the shown part)
+        int myRank = 0;
+        for (int i = 0; i < all.size(); i++) if (all.get(i).uuid().equals(player.getUniqueId())) myRank = i + 1;
+        Profile me = data.profile(player);
+        if (me.isLoaded()) {
+            String amount = Shop.format(Math.floor(me.balance(currency)));
+            m.body(myRank > 0
+                    ? msg(orbs ? "menu.top-you-rank-orbs" : "menu.top-you-rank-coins", "rank", "#" + myRank, "amount", amount)
+                    : msg(orbs ? "menu.top-you-orbs" : "menu.top-you", "amount", amount));
+        }
+
+        List<Integer> ranks = new ArrayList<>();
+        for (int i = 0; i < top.size(); i++) ranks.add(i + 1);
+        // A chest page holds 28; the dialog scrolls, so it shows them all
+        List<Integer> shown = dialog ? ranks : paginate(m, view, ranks, CHEST_PAGE);
+        for (int rank : shown) {
+            Storage.TopEntry e = top.get(rank - 1);
             boolean self = e.uuid().equals(player.getUniqueId());
-            shownSelf |= self;
             String color = switch (rank) {
                 case 1 -> "<gold>";
                 case 2 -> "<gray>";
@@ -323,15 +343,23 @@ final class Pages {
                 default -> "<white>";
             };
             String name = e.name() == null ? "?" : Text.escape(e.name());
-            m.body(msg(orbs ? "menu.top-line-orbs" : "menu.top-line", "rank", color + "#" + rank,
-                    "player", (self ? "<aqua>" : "<white>") + name + "</" + (self ? "aqua" : "white") + ">",
-                    "amount", Shop.format(Math.floor(e.balance()))));
-            rank++;
+            Flags.Country flag = e.flag() == null || !cfg().section("flags") ? null : plugin.flags().get(e.flag());
+            String label = msg("menu.top-entry", "rank", color + "#" + rank,
+                    "player", (self ? "<aqua>" : "<white>") + name + "</" + (self ? "aqua" : "white") + ">");
+            String amount = msg(orbs ? "menu.top-entry-orbs" : "menu.top-entry-coins", "amount", Shop.format(Math.floor(e.balance())));
+            String flagLine = flag == null ? msg("menu.top-entry-no-flag") : msg("menu.top-entry-flag", "country", Text.escape(flag.name()));
+            m.add(new Menu.Button(Menu.Icon.player(e.uuid(), e.name(), flag), label, amount, flagLine, List.of(), self,
+                    full ? 200 : 300, null));
         }
-        if (!shownSelf) {
-            Profile p = data.profile(player);
-            m.body("<dark_gray>...");
-            m.body(msg(orbs ? "menu.top-you-orbs" : "menu.top-you", "amount", Shop.format(Math.floor(p.balance(currency)))));
+        m.columns = full ? 2 : 1;
+
+        if (!full && all.size() > size) {
+            m.nav.add(Menu.Button.of(Menu.Icon.of("BOOK"), msg("menu.button.full-top"), null,
+                    msg("menu.tooltip.full-top", "size", cfg().topFullSize),
+                    (p, c, in) -> menus.open(p, new View(id, 0, null, "full"))).width(160));
+        } else if (full) {
+            m.nav.add(Menu.Button.of(Menu.Icon.of("DIAMOND"), msg("menu.button.short-top", "size", cfg().topSize), null,
+                    msg("menu.tooltip.short-top", "size", cfg().topSize), (p, c, in) -> menus.open(p, View.of(id))).width(120));
         }
         return m;
     }

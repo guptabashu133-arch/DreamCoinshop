@@ -143,6 +143,13 @@ final class DialogMenus implements Menus.Renderer, Listener {
             }
             body.add(DialogBody.plainMessage(lines, 300));
         }
+        if (icons && !menu.preload.isEmpty()) {
+            // The next flags of the Flags button, drawn now so their pictures are downloaded
+            // before the button shows them (otherwise the client shows a plain head meanwhile)
+            Component strip = text().parse(text().raw("menu.flags-next"), null);
+            for (Flags.Country c : menu.preload) strip = strip.append(Component.space()).append(flagHead(c));
+            body.add(DialogBody.plainMessage(strip, 300));
+        }
 
         List<DialogInput> inputs = new ArrayList<>();
         for (Menu.Input in : menu.inputs) inputs.add(input(in));
@@ -173,7 +180,11 @@ final class DialogMenus implements Menus.Renderer, Listener {
     private ActionButton button(Player player, Menu.Button b, int token, int index, boolean icons, boolean bedrock) {
         Component label = text().parse(b.label(), null);
         if (b.icon() != null) {
-            Component icon = icons ? icon(b.icon()) : flagText(b.icon(), bedrock);
+            Menu.Icon ic = b.icon();
+            boolean hideBadge = ic.badge() == null || bedrock && plugin.config().flagsBedrock == ShopConfig.BedrockFlags.HIDE;
+            Component badge = hideBadge ? null : icons ? flagHead(ic.badge()) : flagText(ic.badge(), bedrock);
+            if (badge != null) label = badge.append(Component.space()).append(label);
+            Component icon = icons ? icon(ic) : ic.flag() == null ? null : flagText(ic.flag(), bedrock);
             if (icon != null) label = icon.append(Component.space()).append(label);
         }
         if (b.status() != null && !b.status().isEmpty()) label = label.append(Component.text("  ")).append(text().parse(b.status(), null));
@@ -185,9 +196,9 @@ final class DialogMenus implements Menus.Renderer, Listener {
 
     /** A sprite of an item, or the flag head. Null if there's no picture for it. */
     private Component icon(Menu.Icon icon) {
-        if (icon.flag() != null) {
-            Flags.Country c = icon.flag();
-            return headCache.computeIfAbsent(c.code(), k -> ModernText.head("flag_" + k, c.texture()));
+        if (icon.flag() != null) return flagHead(icon.flag());
+        if (icon.player() != null) {
+            return ModernText.playerHead(icon.player(), icon.playerName(), org.bukkit.Bukkit.getPlayer(icon.player()));
         }
         if (icon.material() == null) return null;
         Material m = Material.matchMaterial(icon.material());
@@ -205,10 +216,12 @@ final class DialogMenus implements Menus.Renderer, Listener {
         }
     }
 
+    private Component flagHead(Flags.Country c) {
+        return headCache.computeIfAbsent(c.code(), k -> ModernText.head("flag_" + k, c.texture()));
+    }
+
     /** Players who can't see heads in text get the flag as "[IN]" (Bedrock: a glyph if set up). */
-    private Component flagText(Menu.Icon icon, boolean bedrock) {
-        if (icon.flag() == null) return null;
-        Flags.Country c = icon.flag();
+    private Component flagText(Flags.Country c, boolean bedrock) {
         ShopConfig cfg = plugin.config();
         if (bedrock && cfg.flagsBedrock == ShopConfig.BedrockFlags.GLYPH && c.bedrockGlyph() > 0) {
             return Component.text(new String(Character.toChars(c.bedrockGlyph())), NamedTextColor.WHITE);
@@ -366,6 +379,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
         if (index < 0 || index >= s.buttons.size()) return;
         Map<String, Object> mine = readInputs(s.menu, response);
         Menu.Button button = s.buttons.get(index);
+        if (button.action() == null) return; // just information (e.g. a leaderboard row)
         try {
             button.action().run(player, Menu.Click.LEFT, mine);
         } catch (Exception e) {

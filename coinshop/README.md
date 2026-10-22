@@ -44,7 +44,15 @@ shown next to the tag in chat:
 
 The Flags button on the main menu keeps changing to another country
 (`flags.rotate`). The flags list has pages and a search box (dialogs). `flags.sold`
-limits the countries for sale, `flags.featured` puts some first.
+limits the countries for sale, `flags.featured` puts some first. Under the main menu the
+next few flags are drawn small, so their pictures are already downloaded when the button
+shows them.
+
+## Leaderboards
+
+Top Coins and Orbs Top (from the Orbshop) show the top 10 (`top.size`): every row has the
+player's head, their equipped flag, their name and amount, and you see your own rank.
+**View full leaderboard** shows the top 50 (`top.full-size`, up to 100).
 
 ## Settings in-game
 

@@ -26,7 +26,8 @@ interface Storage {
         }
     }
 
-    record TopEntry(UUID uuid, String name, double balance) {
+    /** flag: the country code of the flag they have equipped, or null. */
+    record TopEntry(UUID uuid, String name, double balance, String flag) {
     }
 
     /** "Something about this player changed", sent by the server that changed it. */

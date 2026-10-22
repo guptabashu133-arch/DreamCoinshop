@@ -155,6 +155,9 @@ menu:
     orbs-top: "<aqua>Orbs Top"
     save: "<green><bold>Save"
     prices: "<gold>Prices"
+    # <size>
+    full-top: "<yellow>View full leaderboard"
+    short-top: "<yellow>Top <size>"
   tooltip:
     back: "<gray>Return to the previous menu"
     buy: "<yellow>Click to purchase"
@@ -167,6 +170,9 @@ menu:
     spawnerwand: "<gray>Sells spawners at a bonus rate"
     page: "<gray>Go to another page"
     search: "<gray>Type a country above, then click Search"
+    # <size>
+    full-top: "<gray>See the top <size> players"
+    short-top: "<gray>Back to the top <size>"
 
   # Shown after an item's name. <price>
   status:
@@ -192,6 +198,20 @@ menu:
   top-empty: "<gray>Nobody has any coins yet!"
   top-empty-orbs: "<gray>Nobody has any orbs yet!"
   top-loading: "<gray>Loading..."
+  # One player in a top list: their head and flag are put in front. <rank>, <player>
+  top-entry: "<rank> <player>"
+  top-entry-coins: "<green><amount> coins"
+  top-entry-orbs: "<light_purple><amount> orbs"
+  # Hover text / item lore. <country> (or none)
+  top-entry-flag: "<gray>Flag: <white><country>"
+  top-entry-no-flag: "<gray>No flag yet"
+  # <size>
+  top-full-intro: "<gray>The top <size> players"
+  # <rank>, <amount>
+  top-you-rank-coins: "<aqua>You are <rank>: <green><amount> coins"
+  top-you-rank-orbs: "<aqua>You are <rank>: <light_purple><amount> orbs"
+  # Under the main menu: the flags coming up next on the Flags button (Java 1.21.9+)
+  flags-next: "<gray>Next flags:"
 
   # Settings menu
   settings-intro: "<gray>Changes are saved to config.yml and work right away."
@@ -242,6 +262,7 @@ menu:
     orb-amount: "Orbs each time"
     rotate-seconds: "Flag changes every ... seconds"
     top-size: "Players in Top lists"
+    top-full-size: "Players in the full leaderboard"
     click-cooldown: "Click cooldown (ms)"
     menu-style: "Menu style"
     bedrock-style: "Bedrock menu style"

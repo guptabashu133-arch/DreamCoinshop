@@ -155,8 +155,10 @@ orbs:
 
 # ─────────────────────────────── leaderboards ───────────────────────────────
 top:
-  # Players shown in Top Coins / Orbs Top.
+  # Players shown in Top Coins / Orbs Top (each with their head and equipped flag).
   size: 10
+  # Players shown after clicking "View full leaderboard" (up to 100).
+  full-size: 50
   # How often the list is reloaded from the database.
   refresh-seconds: 30
 
