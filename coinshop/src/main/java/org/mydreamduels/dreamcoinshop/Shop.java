@@ -61,7 +61,7 @@ final class Shop {
 
     // ------------------------------------------------------------------ cosmetics
 
-    /** Price and display name of a colour / glow / tag / gradient / flag. */
+    /** Price (with any sale) and display name of a colour / glow / tag / gradient / flag / particle. */
     private record Thing(String display, double price) {
     }
 
@@ -69,10 +69,10 @@ final class Shop {
         if (c == Category.FLAG) {
             Flags.Country country = plugin.flags().get(key);
             return country == null || !Flags.sold(plugin.config(), country.code()) ? null
-                    : new Thing(country.name() + " flag", plugin.config().flagPrice);
+                    : new Thing(country.name() + " flag", plugin.sales().price(c.section, plugin.config().flagPrice));
         }
         ShopConfig.Item item = plugin.config().item(c, key);
-        return item == null ? null : new Thing(Text.plain(item.display()), item.price());
+        return item == null ? null : new Thing(Text.plain(item.display()), plugin.sales().price(c.section, item.price()));
     }
 
     /**
@@ -111,6 +111,7 @@ final class Shop {
             plugin.sounds().play(player, "equip");
         }
         if (category == Category.GLOW || category == Category.GRADIENT) plugin.cosmetics().refresh(player);
+        if (category == Category.PARTICLE) plugin.particles().refresh(player);
     }
 
     void buyPerk(Player player, String key) {
@@ -118,14 +119,15 @@ final class Shop {
         if (p == null) return;
         ShopConfig.Item perk = plugin.config().item(Category.PERK, key);
         if (perk == null || p.owns(Category.PERK, key)) return;
-        if (!plugin.data().charge(p, Currency.COINS, perk.price())) {
+        double price = plugin.sales().price("perks", perk.price());
+        if (!plugin.data().charge(p, Currency.COINS, price)) {
             text().send(player, "shop.not-enough-coins", null);
             plugin.sounds().play(player, "purchase-fail");
             return;
         }
         plugin.data().unlock(p, Category.PERK, key);
         plugin.cosmetics().applyPerks(player);
-        log(player, "perk " + key, perk.price(), Currency.COINS);
+        log(player, "perk " + key, price, Currency.COINS);
         text().send(player, "shop.unlocked-perk", Ph.of("item", Text.plain(perk.display())));
         plugin.sounds().play(player, "purchase-success");
     }
@@ -137,13 +139,14 @@ final class Shop {
         if (p == null) return;
         ShopConfig.Wand wand = plugin.config().sellwands.get(key);
         if (wand == null) return;
-        if (!plugin.data().charge(p, Currency.COINS, wand.price())) {
+        double price = plugin.sales().price("sellwands", wand.price());
+        if (!plugin.data().charge(p, Currency.COINS, price)) {
             text().send(player, "shop.not-enough-coins", null);
             plugin.sounds().play(player, "purchase-fail");
             return;
         }
         give(player, sellwandItem(player, wand.display(), wand.multiplier(), wand.uses()));
-        log(player, "sellwand " + key, wand.price(), Currency.COINS);
+        log(player, "sellwand " + key, price, Currency.COINS);
         text().send(player, "shop.purchased-wand", Ph.of("item", Text.plain(wand.display())));
         plugin.sounds().play(player, "purchase-success");
     }
@@ -174,7 +177,8 @@ final class Shop {
         if (p == null) return;
         ShopConfig.Wand wand = plugin.config().spawnerWands.get(key);
         if (wand == null) return;
-        if (!plugin.data().charge(p, Currency.COINS, wand.price())) {
+        double price = plugin.sales().price("spawnerwands", wand.price());
+        if (!plugin.data().charge(p, Currency.COINS, price)) {
             text().send(player, "shop.not-enough-coins", null);
             plugin.sounds().play(player, "purchase-fail");
             return;
@@ -184,11 +188,11 @@ final class Shop {
                 .replace("%multiplier%", format(wand.multiplier()) + "x");
         runCommands(List.of(command), ok -> {
             if (ok == null || ok) {
-                log(player, "spawner sellwand " + key, wand.price(), Currency.COINS);
+                log(player, "spawner sellwand " + key, price, Currency.COINS);
                 text().send(player, "shop.purchased-wand", Ph.of("item", Text.plain(wand.display())));
                 plugin.sounds().play(player, "purchase-success");
             } else {
-                refund(player, Currency.COINS, wand.price());
+                refund(player, Currency.COINS, price);
                 text().send(player, "shop.give-failed", Ph.of("item", Text.plain(wand.display())));
                 plugin.sounds().play(player, "purchase-fail");
             }
@@ -202,7 +206,8 @@ final class Shop {
         if (p == null) return;
         ShopConfig.OrbItem item = plugin.config().orbItems.get(key);
         if (item == null) return;
-        if (!plugin.data().charge(p, Currency.ORBS, item.price())) {
+        double price = plugin.sales().price("orbshop", item.price());
+        if (!plugin.data().charge(p, Currency.ORBS, price)) {
             text().send(player, "orbs.not-enough-orbs", null);
             plugin.sounds().play(player, "purchase-fail");
             return;
@@ -210,15 +215,15 @@ final class Shop {
         List<String> commands = item.commands().stream().map(c -> c.replace("%player%", player.getName())).toList();
         runCommands(commands, ok -> {
             if (ok == null) {
-                log(player, "orbshop " + key + " (partly given)", item.price(), Currency.ORBS);
+                log(player, "orbshop " + key + " (partly given)", price, Currency.ORBS);
                 text().send(player, "shop.give-partly", Ph.of("item", Text.plain(item.display())));
                 plugin.sounds().play(player, "purchase-fail");
             } else if (ok) {
-                log(player, "orbshop " + key, item.price(), Currency.ORBS);
-                text().send(player, "orbs.purchased", Ph.of("item", Text.plain(item.display()), "price", format(item.price())));
+                log(player, "orbshop " + key, price, Currency.ORBS);
+                text().send(player, "orbs.purchased", Ph.of("item", Text.plain(item.display()), "price", format(price)));
                 plugin.sounds().play(player, "purchase-success");
             } else {
-                refund(player, Currency.ORBS, item.price());
+                refund(player, Currency.ORBS, price);
                 text().send(player, "shop.give-failed", Ph.of("item", Text.plain(item.display())));
                 plugin.sounds().play(player, "purchase-fail");
             }

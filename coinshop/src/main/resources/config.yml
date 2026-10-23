@@ -10,7 +10,28 @@
 license-key: ""
 
 # Used by the plugin to update this file. Don't change it.
-config-version: 2
+config-version: 3
+
+# ─────────────────────────────── currencies ───────────────────────────────
+# The names of the two currencies, used in every message, title and button
+# (messages.yml: <coins_name>, <orbs_name> ...). Rename Orbs to Shards, Gems,
+# Tokens - anything. Saved balances don't change.
+currencies:
+  coins:
+    name: "Coins"             # "500 Coins", "Top Coins"
+    # One of them. Empty = the name without its last "s" (Coins -> Coin).
+    name-singular: ""
+    # Extra command names for /coin (e.g. [gem, gems]). Needs a restart.
+    commands: []
+  orbs:
+    name: "Orbs"
+    name-singular: ""
+    # Name of its shop on the menus. Empty = automatic: "Orbshop", or "Shard Shop"
+    # after renaming Orbs to Shards (name-singular + " Shop").
+    shop-name: ""
+    # Extra command names for /orb and /orbshop (e.g. [shard, shards] and [shardshop]). Needs a restart.
+    commands: []
+    shop-commands: []
 
 # ─────────────────────────────── menus ───────────────────────────────
 menu:
@@ -36,12 +57,13 @@ menu:
     tags: "<gold><bold>Tags"
     gradients: "<gold><bold>Name Gradient"
     flags: "<gold><bold>Flags"
+    particles: "<gold><bold>Particles"
     sellwands: "<gold><bold>Sellwands"
     spawnerwands: "<gold><bold>Spawner Sellwands"
-    buycoins: "<gold><bold>Buy Coins"
-    topcoins: "<gold><bold>Top Coins"
-    orbshop: "<light_purple><bold>Orbshop"
-    orbstop: "<light_purple><bold>Orbs Top"
+    buycoins: "<gold><bold>Buy <coins_name>"
+    topcoins: "<gold><bold>Top <coins_name>"
+    orbshop: "<light_purple><bold><orbshop_name>"
+    orbstop: "<light_purple><bold><orbs_name> Top"
     settings: "<red><bold>Coinshop Settings"
   # Descriptions of the buttons on the main menu.
   descriptions:
@@ -51,12 +73,52 @@ menu:
     tags: "Unlock a tag shown next to your name in chat"
     gradients: "Unlock a gradient colour for your name"
     flags: "Show your country's flag next to your name in chat"
+    particles: "Trails, halos, wings and more around you"
     sellwands: "Buy wands that instantly sell a chest's contents"
     spawnerwands: "Buy wands that instantly sell spawners at a bonus rate"
-    buycoins: "Top up your Coins balance with real money"
-    topcoins: "See who has the most Coins on the server"
-    orbshop: "Spend your Orbs on spawners"
+    buycoins: "Top up your <coins_name> balance with real money"
+    topcoins: "See who has the most <coins_name> on the server"
+    orbshop: "Spend your <orbs_name> on spawners"
     settings: "Change the shop settings and prices (admins)"
+
+# ─────────────────────────────── chest menu layout ───────────────────────────────
+# How the chest menus look (old versions, Bedrock, /coinshop gui). Slots count
+# from 0 (top left) to 53 (bottom right of 6 rows), 9 per row. Icons are item
+# names like DIAMOND. The section icons are used in dialogs too.
+gui:
+  # Border item. AIR = no border.
+  filler: BLACK_STAINED_GLASS_PANE
+  # true = fill every empty slot with it, not only the border.
+  fill-empty: false
+  # Rows of the main menu (3-6). 0 = as many as needed.
+  main-rows: 0
+  # Where the info item (balance, sale ...) goes in the top row (0-8).
+  info-slot: 4
+  # Fixed slots for the main menu buttons. Leave a section out to put it in the
+  # next free slot. Example for a 5-row menu:
+  #   chatcolors: 10, glows: 11, perks: 12, tags: 13, gradients: 14, flags: 15, particles: 16 ...
+  main-slots: {}
+  # Icons of the shop sections.
+  icons:
+    chatcolors: NAME_TAG
+    glows: GLOWSTONE_DUST
+    perks: NETHER_STAR
+    tags: PAPER
+    gradients: FIREWORK_STAR
+    flags: WHITE_BANNER
+    particles: BLAZE_POWDER
+    sellwands: BLAZE_ROD
+    spawnerwands: SPAWNER
+    buycoins: GOLD_INGOT
+    topcoins: DIAMOND
+    orbshop: ENDER_PEARL
+    settings: COMPARATOR
+  # Icons of the fixed buttons.
+  buttons:
+    back: ARROW
+    close: BARRIER
+    previous: ARROW
+    next: SPECTRAL_ARROW
 
 # Turn whole sections of the shop on or off. A section that's off is hidden
 # from the menu, and anything already bought in it stops showing.
@@ -72,6 +134,7 @@ categories:
   buycoins: true
   topcoins: true
   orbshop: true
+  particles: true
 
 # ─────────────────────────────── buying ───────────────────────────────
 shop:
@@ -135,6 +198,16 @@ flags:
   # Flags shown per page in the list.
   per-page: 24
 
+# ─────────────────────────────── particles ───────────────────────────────
+# How particle cosmetics (the "particles:" items further down) are shown.
+particle-settings:
+  # Other players see your particles too. false = only you see your own.
+  visible-to-others: true
+  # Draw every ... ticks (20 = 1 second). Higher = lighter on the server and clients.
+  interval-ticks: 2
+  # Keep showing particles while the player has invisibility.
+  when-invisible: false
+
 # ─────────────────────────────── store ───────────────────────────────
 # Link of the "Visit Store" button in the Buy Coins menu.
 store-url: "https://store.taraashmc.fun"
@@ -153,6 +226,37 @@ orbs:
     # Tell the player in chat (messages.yml -> orbs.received).
     message: true
 
+# ─────────────────────────────── sale ───────────────────────────────
+# Put the shop on sale: /coinshop sale <percent> <time> [sections...]
+#   /coinshop sale 20 2h          everything 20% off for 2 hours
+#   /coinshop sale 50 1d tags     tags half price for a day
+#   /coinshop sale stop           end it now        /coinshop sale   see the current one
+# Or in-game: /coinshop settings -> Sale. A sale is saved in the database, so every
+# server of a network has it (they notice a new one within 10 seconds).
+sale:
+  # Announce a new sale in chat (messages.yml -> sale.started).
+  broadcast: true
+  # Show the old price crossed out next to the sale price.
+  show-old-price: true
+
+# ─────────────────────────────── pay ───────────────────────────────
+# /coin pay <player> <amount> (and /orb pay): players send each other money.
+# Works for offline players and players on other servers too.
+pay:
+  coins:
+    enabled: true
+    # Smallest amount that can be sent.
+    min: 1
+    # Part of every payment that disappears (0 = none). 5 = the receiver gets 95%.
+    tax-percent: 0
+    # Seconds between two payments of the same player.
+    cooldown-seconds: 3
+  orbs:
+    enabled: false
+    min: 1
+    tax-percent: 0
+    cooldown-seconds: 3
+
 # ─────────────────────────────── leaderboards ───────────────────────────────
 top:
   # Players shown in Top Coins / Orbs Top (each with their head and equipped flag).
@@ -161,6 +265,12 @@ top:
   full-size: 50
   # How often the list is reloaded from the database.
   refresh-seconds: 30
+  # PlaceholderAPI, for holograms (DecentHolograms, FancyHolograms ...):
+  #   %dreamcoinshop_top_coins_1_name%  %dreamcoinshop_top_coins_1_amount_formatted%
+  #   %dreamcoinshop_top_orbs_3_flag%   (1 ... full-size; also amount, flag_code, flag_name, uuid)
+  #   %dreamcoinshop_rank_coins%        the player's own place
+  # Shown for an empty place (#8 when only 7 players have coins) and an unranked player.
+  placeholder-none: "---"
 
 # ─────────────────────────────── storage ───────────────────────────────
 # Where balances and unlocks are saved.
@@ -260,6 +370,36 @@ namegradients:
   candy:  { display: "Candy",  from: "#ff9a9e", to: "#fecfef", price: 1000, icon: PINK_DYE }
   gold:   { display: "Gold",   from: "#BF953F", to: "#FCF6BA", price: 1000, icon: GOLD_NUGGET }
   ice:    { display: "Ice",    from: "#83a4d4", to: "#b6fbff", price: 1000, icon: BLUE_ICE }
+
+# ---------------- Particles ----------------
+# effect: FLAME_TRAIL, SOUL_TRAIL, HEART_HALO, ANGEL_HALO, RAINBOW_RING, SNOW_CLOUD,
+#   RAIN_CLOUD, MUSIC_NOTES, ENCHANTED, ENDER_AURA, EMERALD_SPARKLE, CHERRY_BLOSSOM,
+#   TOTEM_SPIRAL, WITCH_MAGIC, GLOW_AURA, ELECTRIC, BUBBLES, LAVA_DRIP, GALAXY,
+#   ANGEL_WINGS, DEVIL_WINGS, SCULK_SOULS
+# The same effect can be sold more than once (e.g. a cheap and a VIP version).
+particles:
+  flame_trail:     { display: "<gold>Flame Trail",         effect: FLAME_TRAIL,     price: 1500, icon: BLAZE_POWDER }
+  soul_trail:      { display: "<aqua>Soul Trail",          effect: SOUL_TRAIL,      price: 1800, icon: SOUL_TORCH }
+  heart_halo:      { display: "<red>Heart Halo",           effect: HEART_HALO,      price: 2000, icon: RED_DYE }
+  angel_halo:      { display: "<yellow>Angel Halo",        effect: ANGEL_HALO,      price: 2500, icon: GOLD_NUGGET }
+  rainbow_ring:    { display: "<rainbow>Rainbow Ring",     effect: RAINBOW_RING,    price: 3000, icon: PRISMARINE_CRYSTALS }
+  snow_cloud:      { display: "<white>Snow Cloud",         effect: SNOW_CLOUD,      price: 2000, icon: SNOWBALL }
+  rain_cloud:      { display: "<blue>Rain Cloud",          effect: RAIN_CLOUD,      price: 2000, icon: WATER_BUCKET }
+  music_notes:     { display: "<green>Music Notes",        effect: MUSIC_NOTES,     price: 1500, icon: NOTE_BLOCK }
+  enchanted:       { display: "<light_purple>Enchanted",   effect: ENCHANTED,       price: 1800, icon: ENCHANTING_TABLE }
+  ender_aura:      { display: "<dark_purple>Ender Aura",   effect: ENDER_AURA,      price: 2000, icon: ENDER_PEARL }
+  emerald_sparkle: { display: "<green>Emerald Sparkle",    effect: EMERALD_SPARKLE, price: 1800, icon: EMERALD }
+  cherry_blossom:  { display: "<#FFB7C5>Cherry Blossom",   effect: CHERRY_BLOSSOM,  price: 2500, icon: PINK_PETALS }
+  totem_spiral:    { display: "<gold>Totem Spiral",        effect: TOTEM_SPIRAL,    price: 3000, icon: TOTEM_OF_UNDYING }
+  witch_magic:     { display: "<dark_purple>Witch Magic",  effect: WITCH_MAGIC,     price: 1800, icon: POTION }
+  glow_aura:       { display: "<aqua>Glow Aura",           effect: GLOW_AURA,       price: 1800, icon: GLOW_INK_SAC }
+  electric:        { display: "<yellow>Electric",          effect: ELECTRIC,        price: 2200, icon: LIGHTNING_ROD }
+  bubbles:         { display: "<aqua>Bubbles",             effect: BUBBLES,         price: 1500, icon: HEART_OF_THE_SEA }
+  lava_drip:       { display: "<red>Lava Drip",            effect: LAVA_DRIP,       price: 2200, icon: LAVA_BUCKET }
+  galaxy:          { display: "<gradient:#7F00FF:#00D4FF>Galaxy", effect: GALAXY,  price: 3500, icon: END_ROD }
+  angel_wings:     { display: "<white><bold>Angel Wings",  effect: ANGEL_WINGS,     price: 5000, icon: FEATHER }
+  devil_wings:     { display: "<dark_red><bold>Devil Wings", effect: DEVIL_WINGS,   price: 5000, icon: NETHER_WART }
+  sculk_souls:     { display: "<dark_aqua>Sculk Souls",    effect: SCULK_SOULS,     price: 2500, icon: SCULK }
 
 # ---------------- Sellwands ----------------
 # Right click a chest to sell it. multiplier is applied to sell-prices below.

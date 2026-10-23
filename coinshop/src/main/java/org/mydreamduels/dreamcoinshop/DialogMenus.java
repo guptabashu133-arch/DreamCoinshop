@@ -120,7 +120,9 @@ final class DialogMenus implements Menus.Renderer, Listener {
         boolean icons = Capabilities.OBJECTS && !bedrock && ClientInfo.supportsSprites(player);
 
         List<Menu.Button> all = new ArrayList<>(menu.buttons);
+        if (menu.previous != null) all.add(menu.previous);
         all.addAll(menu.nav);
+        if (menu.next != null) all.add(menu.next);
         if (menu.back != null) all.add(menu.back);
         int token = keepToken && old != null ? old.token : tokens.getAndIncrement();
         Session session = new Session(token, menu, view, all);
@@ -131,7 +133,7 @@ final class DialogMenus implements Menus.Renderer, Listener {
         for (int i = 0; i < all.size(); i++) actions.add(button(player, all.get(i), session.token, i, icons, bedrock));
         // Every dialog gets a Close footer: it is also what Escape sends, so we know the dialog closed
         Menu.Button close = menu.close != null ? menu.close
-                : Menu.Button.of(Menu.Icon.of("BARRIER"), text().raw("menu.button.close"), null, null, null).width(120);
+                : Menu.Button.of(Menu.Icon.of(plugin.config().guiIcon("close", "BARRIER")), text().raw("menu.button.close"), null, null, null).width(120);
         ActionButton exit = button(player, close, session.token, -1, icons, bedrock);
 
         List<DialogBody> body = new ArrayList<>();

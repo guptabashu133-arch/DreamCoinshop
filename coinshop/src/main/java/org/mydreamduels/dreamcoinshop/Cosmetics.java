@@ -127,6 +127,7 @@ final class Cosmetics {
         platform.forPlayer(player, () -> {
             if (player.isOnline()) applyGlow(player, profile);
         });
+        plugin.particles().refresh(player);
     }
 
     // ------------------------------------------------------------------ glow

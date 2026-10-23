@@ -33,6 +33,9 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
     private Cosmetics cosmetics;
     private Shop shop;
     private Settings settings;
+    private Sales sales;
+    private ParticleEffects particles;
+    private ChatPrompts prompts;
     private Menus menus;
     private PaperChat paperChat;
     private LegacyChat legacyChat;
@@ -61,8 +64,10 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         sounds.reload();
         flags = Flags.load();
         cosmetics = new Cosmetics(this, platform);
+        particles = new ParticleEffects(this, platform);
         shop = new Shop(this, platform);
         settings = new Settings(this, platform);
+        sales = new Sales(this);
 
         data = new DataManager(this, platform, cfg.storage.serverName());
         data.topRefreshSeconds(cfg.topRefreshSeconds);
@@ -71,9 +76,12 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(bedrock, this);
         data.start(createStorage(cfg.storage), !cfg.storage.type().equals("SQLITE"), cfg.storage.pollMs());
 
+        sales.start();
         menus = new Menus(this, platform);
         getServer().getPluginManager().registerEvents(menus, this);
         getServer().getPluginManager().registerEvents(new SellwandListener(this), this);
+        prompts = new ChatPrompts(this);
+        getServer().getPluginManager().registerEvents(prompts, this);
         getServer().getPluginManager().registerEvents(this, this);
         registerChat();
         cosmetics.start();
@@ -83,6 +91,9 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         command("orbshop", shopCommand);
         command("coin", new CurrencyCommand(this, Currency.COINS));
         command("orb", new CurrencyCommand(this, Currency.ORBS));
+        CommandAliases.register(this, "coin", cfg.coinCommands);
+        CommandAliases.register(this, "orb", cfg.orbCommands);
+        CommandAliases.register(this, "orbshop", cfg.orbshopCommands);
 
         startOrbTimer();
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -109,6 +120,8 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         if (config == null) return; // never started (broken config.yml)
         if (license != null) license.stop();
         if (orbTask != null) orbTask.cancel();
+        if (sales != null) sales.stop();
+        if (particles != null) particles.stopAll();
         if (menus != null) menus.closeAll();
         if (cosmetics != null) {
             cosmetics.stop();
@@ -215,6 +228,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onQuit(PlayerQuitEvent event) {
         cosmetics.clear(event.getPlayer());
+        particles.stop(event.getPlayer().getUniqueId());
     }
 
     // ------------------------------------------------------------------ timers
@@ -276,6 +290,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         if (old.topSize != cfg.topSize || old.topFullSize != cfg.topFullSize) data.invalidateTops();
         registerChat();
         startOrbTimer();
+        if (old.particlesIntervalTicks != cfg.particlesIntervalTicks) particles.stopAll();
         for (Player p : Bukkit.getOnlinePlayers()) {
             Profile prof = data.online(p.getUniqueId());
             if (prof != null && prof.isLoaded()) applyLoaded(prof);
@@ -323,6 +338,18 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
 
     Settings settings() {
         return settings;
+    }
+
+    Sales sales() {
+        return sales;
+    }
+
+    ParticleEffects particles() {
+        return particles;
+    }
+
+    ChatPrompts prompts() {
+        return prompts;
     }
 
     Menus menus() {

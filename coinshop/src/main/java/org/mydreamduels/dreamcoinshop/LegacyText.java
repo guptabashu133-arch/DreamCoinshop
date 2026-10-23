@@ -34,7 +34,9 @@ final class LegacyText implements Text {
     @Override
     public String raw(String path) {
         String value = messages.getString(path);
-        return value != null ? value : "<red>Missing message: " + path;
+        if (value == null) return "<red>Missing message: " + path;
+        ShopConfig cfg = plugin.config();
+        return cfg == null ? value : cfg.names(value);
     }
 
     @Override

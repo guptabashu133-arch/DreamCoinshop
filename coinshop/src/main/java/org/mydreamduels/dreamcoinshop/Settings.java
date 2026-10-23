@@ -37,6 +37,7 @@ final class Settings {
             toggle("cat-tags", "categories.tags", "PAPER"),
             toggle("cat-gradients", "categories.gradients", "FIREWORK_STAR"),
             toggle("cat-flags", "categories.flags", "WHITE_BANNER"),
+            toggle("cat-particles", "categories.particles", "BLAZE_POWDER"),
             toggle("cat-sellwands", "categories.sellwands", "BLAZE_ROD"),
             toggle("cat-spawnerwands", "categories.spawnerwands", "SPAWNER"),
             toggle("cat-buycoins", "categories.buycoins", "GOLD_INGOT"),
@@ -53,6 +54,12 @@ final class Settings {
             toggle("names-tab", "names.tab-list", "PLAYER_HEAD"),
             toggle("names-display", "names.display-name", "NAME_TAG"),
             toggle("flags-rotate", "flags.rotate.enabled", "COMPASS"),
+            toggle("particles-others", "particle-settings.visible-to-others", "ENDER_EYE"),
+            toggle("particles-invisible", "particle-settings.when-invisible", "GLASS"),
+            toggle("sale-broadcast", "sale.broadcast", "BELL"),
+            toggle("sale-old-price", "sale.show-old-price", "PAPER"),
+            toggle("pay-coins", "pay.coins.enabled", "GOLD_NUGGET"),
+            toggle("pay-orbs", "pay.orbs.enabled", "AMETHYST_SHARD"),
             toggle("orbs-payout", "orbs.payout.enabled", "ENDER_PEARL"),
             toggle("orbs-message", "orbs.payout.message", "BELL"));
 
@@ -64,6 +71,12 @@ final class Settings {
             number("top-size", "top.size", "DIAMOND", 1, 45, 1),
             number("top-full-size", "top.full-size", "BOOK", 10, 100, 5),
             number("click-cooldown", "menu.click-cooldown-ms", "LEVER", 0, 2000, 50),
+            number("particle-interval", "particle-settings.interval-ticks", "CLOCK", 1, 40, 1),
+            number("pay-tax", "pay.coins.tax-percent", "GOLD_INGOT", 0, 50, 1),
+            number("pay-min", "pay.coins.min", "GOLD_NUGGET", 0, 1_000_000, 1),
+            text("coins-name", "currencies.coins.name", "GOLD_INGOT"),
+            text("orbs-name", "currencies.orbs.name", "AMETHYST_SHARD"),
+            text("orbshop-name", "currencies.orbs.shop-name", "ENDER_PEARL"),
             choice("menu-style", "menu.style", "CHEST", List.of("AUTO", "DIALOG", "GUI")),
             choice("bedrock-style", "menu.bedrock-style", "CHEST", List.of("GUI", "DIALOG")),
             choice("flags-bedrock", "flags.bedrock", "WHITE_BANNER", List.of("TEXT", "GLYPH", "HIDE")),
@@ -79,6 +92,7 @@ final class Settings {
             new PriceSection("perks", "perks", false, "NETHER_STAR"),
             new PriceSection("tags", "tags", false, "PAPER"),
             new PriceSection("gradients", "namegradients", false, "FIREWORK_STAR"),
+            new PriceSection("particles", "particles", false, "BLAZE_POWDER"),
             new PriceSection("sellwands", "sellwands", false, "BLAZE_ROD"),
             new PriceSection("spawnerwands", "spawnerwands", false, "SPAWNER"),
             new PriceSection("orbshop", "orbshop", true, "ENDER_PEARL"));
@@ -89,6 +103,10 @@ final class Settings {
 
     private static Def number(String id, String path, String icon, double min, double max, double step) {
         return new Def(id, Kind.NUMBER, path, icon, min, max, step, List.of());
+    }
+
+    private static Def text(String id, String path, String icon) {
+        return new Def(id, Kind.TEXT, path, icon, 0, 0, 0, List.of());
     }
 
     private static Def choice(String id, String path, String icon, List<String> options) {
@@ -129,6 +147,18 @@ final class Settings {
             case "names-tab" -> c.namesTabList;
             case "names-display" -> c.namesDisplay;
             case "flags-rotate" -> c.flagsRotate;
+            case "particles-others" -> c.particlesVisibleToOthers;
+            case "particles-invisible" -> c.particlesWhenInvisible;
+            case "sale-broadcast" -> c.saleBroadcast;
+            case "sale-old-price" -> c.saleShowOldPrice;
+            case "pay-coins" -> c.payCoins.enabled();
+            case "pay-orbs" -> c.payOrbs.enabled();
+            case "particle-interval" -> (double) c.particlesIntervalTicks;
+            case "pay-tax" -> c.payCoins.taxPercent();
+            case "pay-min" -> c.payCoins.min();
+            case "coins-name" -> c.coinsName;
+            case "orbs-name" -> c.orbsName;
+            case "orbshop-name" -> c.orbshopName;
             case "orbs-payout" -> c.orbPayout;
             case "orbs-message" -> c.orbMessage;
             case "flag-price" -> c.flagPrice;
@@ -156,6 +186,7 @@ final class Settings {
             case "perks" -> c.items(Category.PERK).values().forEach(i -> out.put(i.key(), i.price()));
             case "tags" -> c.items(Category.TAG).values().forEach(i -> out.put(i.key(), i.price()));
             case "gradients" -> c.items(Category.GRADIENT).values().forEach(i -> out.put(i.key(), i.price()));
+            case "particles" -> c.items(Category.PARTICLE).values().forEach(i -> out.put(i.key(), i.price()));
             case "sellwands" -> c.sellwands.values().forEach(w -> out.put(w.key(), w.price()));
             case "spawnerwands" -> c.spawnerWands.values().forEach(w -> out.put(w.key(), w.price()));
             case "orbshop" -> c.orbItems.values().forEach(o -> out.put(o.key(), o.price()));
@@ -174,6 +205,7 @@ final class Settings {
             case "perks" -> name(c.item(Category.PERK, key), key);
             case "tags" -> name(c.item(Category.TAG, key), key);
             case "gradients" -> name(c.item(Category.GRADIENT, key), key);
+            case "particles" -> name(c.item(Category.PARTICLE, key), key);
             case "sellwands" -> c.sellwands.containsKey(key) ? c.sellwands.get(key).display() : key;
             case "spawnerwands" -> c.spawnerWands.containsKey(key) ? c.spawnerWands.get(key).display() : key;
             case "orbshop" -> c.orbItems.containsKey(key) ? c.orbItems.get(key).display() : key;

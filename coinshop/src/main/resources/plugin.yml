@@ -10,15 +10,15 @@ softdepend: [PlaceholderAPI, floodgate, Geyser-Spigot, ViaVersion]
 
 commands:
   coinshop:
-    description: Opens the Coinshop. /coinshop settings, reload, gui, dialog for admins.
-    usage: /coinshop [settings|reload|gui|dialog]
+    description: Opens the Coinshop. /coinshop settings, sale, reload, gui, dialog for admins.
+    usage: /coinshop [settings|sale|reload|gui|dialog]
     aliases: [cs]
   coin:
     description: Coins balance, and admin commands to change it.
-    usage: /coin <balance|give|giveall|remove|set|help>
+    usage: /coin <balance|pay|give|giveall|remove|set|help>
   orb:
     description: Orbs balance, and admin commands to change it.
-    usage: /orb <balance|give|giveall|remove|set|help>
+    usage: /orb <balance|pay|give|giveall|remove|set|help>
   orbshop:
     description: Opens the Orbshop.
     usage: /orbshop
@@ -27,8 +27,11 @@ permissions:
   dreamcoinshop.use:
     description: Open /coinshop and /orbshop and buy things.
     default: true
+  dreamcoinshop.pay:
+    description: Send Coins / Orbs to other players with /coin pay (when pay is enabled in config.yml).
+    default: true
   dreamcoinshop.admin:
-    description: Give, remove and set Coins/Orbs, /coinshop reload, and the Settings menu.
+    description: Give, remove and set Coins/Orbs, /coinshop reload and sale, and the Settings menu.
     default: op
     children:
       dreamcoinshop.settings: true

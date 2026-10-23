@@ -31,6 +31,12 @@ sounds:
   # Buy Coins - clicking "Visit Store"
   buycoins-select:   { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 1.0, pitch: 1.2 }
 
+  # A sale started (/coinshop sale)
+  sale-started:      { sound: "ENTITY_PLAYER_LEVELUP",        volume: 0.6, pitch: 0.8 }
+
+  # Getting money from /coin pay
+  pay-received:      { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.8, pitch: 1.2 }
+
   # The automatic Orbs payout
   orb-received:      { sound: "ENTITY_EXPERIENCE_ORB_PICKUP", volume: 0.6, pitch: 1.6 }
 

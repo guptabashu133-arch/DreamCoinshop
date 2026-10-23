@@ -107,23 +107,32 @@ final class ChestMenus implements Menus.Renderer, Listener {
         int size = rows * 9;
 
         // Info item: the body lines
-        if (!menu.body.isEmpty()) inv.setItem(4, item(player, menu.infoIcon, plugin.text().raw("menu.info"), menu.body, false));
+        ShopConfig cfg = plugin.config();
+        if (!menu.body.isEmpty()) inv.setItem(cfg.guiInfoSlot, item(player, menu.infoIcon, plugin.text().raw("menu.info"), menu.body, false));
 
+        // Buttons with a fixed slot (gui.main-slots) first, then the rest fill the inner slots in order
         int[] inner = rows == 6 ? INNER : innerSlots(rows);
-        for (int i = 0; i < menu.buttons.size() && i < inner.length; i++) place(player, holder, inner[i], menu.buttons.get(i));
+        java.util.Set<Integer> taken = new java.util.HashSet<>();
+        for (Map.Entry<Integer, Integer> e : menu.slots.entrySet()) {
+            int slot = e.getValue();
+            if (e.getKey() < menu.buttons.size() && slot >= 0 && slot < size - 9 && slot != cfg.guiInfoSlot && taken.add(slot)) {
+                place(player, holder, slot, menu.buttons.get(e.getKey()));
+            }
+        }
+        int next0 = 0;
+        for (int i = 0; i < menu.buttons.size(); i++) {
+            if (menu.slots.containsKey(i) && holder.slots.containsValue(menu.buttons.get(i))) continue;
+            while (next0 < inner.length && taken.contains(inner[next0])) next0++;
+            if (next0 >= inner.length) break;
+            taken.add(inner[next0]);
+            place(player, holder, inner[next0++], menu.buttons.get(i));
+        }
 
         // Bottom row: previous | nav | back (or close) | nav | next
         int bottom = size - 9;
         List<Menu.Button> nav = new ArrayList<>(menu.nav);
-        Menu.Button previous = null, next = null;
-        for (Menu.Button b : menu.nav) {
-            if (b.icon() != null && "ARROW".equals(b.icon().material())) previous = b;
-            if (b.icon() != null && "SPECTRAL_ARROW".equals(b.icon().material())) next = b;
-        }
-        nav.remove(previous);
-        nav.remove(next);
-        if (previous != null) place(player, holder, bottom, previous);
-        if (next != null) place(player, holder, bottom + 8, next);
+        if (menu.previous != null) place(player, holder, bottom, menu.previous);
+        if (menu.next != null) place(player, holder, bottom + 8, menu.next);
         int[] middle = {bottom + 2, bottom + 6, bottom + 1, bottom + 7};
         for (int i = 0; i < nav.size() && i < middle.length; i++) place(player, holder, middle[i], nav.get(i));
         if (menu.back != null) place(player, holder, bottom + 4, menu.back);
@@ -156,7 +165,10 @@ final class ChestMenus implements Menus.Renderer, Listener {
     }
 
     private void fill(Inventory inv, int rows) {
-        ItemStack glass = new ItemStack(material("BLACK_STAINED_GLASS_PANE", Material.GLASS_PANE));
+        ShopConfig cfg = plugin.config();
+        Material m = Material.matchMaterial(cfg.guiFiller);
+        if (m == null || m.isAir() || !m.isItem()) return; // gui.filler: AIR = no border
+        ItemStack glass = new ItemStack(m);
         ItemMeta meta = glass.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(" ");
@@ -164,7 +176,7 @@ final class ChestMenus implements Menus.Renderer, Listener {
         }
         for (int i = 0; i < rows * 9; i++) {
             int r = i / 9, c = i % 9;
-            if (r == 0 || r == rows - 1 || c == 0 || c == 8) inv.setItem(i, glass);
+            if (cfg.guiFillAll || r == 0 || r == rows - 1 || c == 0 || c == 8) inv.setItem(i, glass);
         }
     }
 
@@ -275,7 +287,7 @@ final class ChestMenus implements Menus.Renderer, Listener {
         Menu.Button b = holder.slots.get(event.getRawSlot());
         if (b == null || b.action() == null) return;
         long now = System.currentTimeMillis();
-        boolean repeatable = holder.view.id().equals("settings") || holder.view.id().equals("prices");
+        boolean repeatable = Menus.ADMIN_VIEWS.contains(holder.view.id());
         if (!repeatable && now - holder.lastClick < plugin.config().clickCooldownMs) return;
         holder.lastClick = now;
         Menu.Click click = switch (type) {

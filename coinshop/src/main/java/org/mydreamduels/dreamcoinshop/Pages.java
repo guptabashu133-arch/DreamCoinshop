@@ -45,17 +45,20 @@ final class Pages {
             Map.entry("chatcolors", "NAME_TAG"), Map.entry("glows", "GLOWSTONE_DUST"), Map.entry("perks", "NETHER_STAR"),
             Map.entry("tags", "PAPER"), Map.entry("gradients", "FIREWORK_STAR"), Map.entry("flags", "WHITE_BANNER"),
             Map.entry("sellwands", "BLAZE_ROD"), Map.entry("spawnerwands", "SPAWNER"), Map.entry("buycoins", "GOLD_INGOT"),
-            Map.entry("topcoins", "DIAMOND"), Map.entry("orbshop", "ENDER_PEARL"), Map.entry("settings", "COMPARATOR"));
+            Map.entry("topcoins", "DIAMOND"), Map.entry("orbshop", "ENDER_PEARL"), Map.entry("settings", "COMPARATOR"),
+            Map.entry("particles", "BLAZE_POWDER"));
 
     /** Items per page of a chest menu (4 rows of 7). */
     static final int CHEST_PAGE = 28;
 
     private final Dreamcoinshop plugin;
     private final Menus menus;
+    private final AdminPages admin;
 
     Pages(Dreamcoinshop plugin, Menus menus) {
         this.plugin = plugin;
         this.menus = menus;
+        this.admin = new AdminPages(plugin, menus, this);
     }
 
     private Text text() {
@@ -66,12 +69,12 @@ final class Pages {
         return plugin.config();
     }
 
-    private String msg(String path) {
+    String msg(String path) {
         return text().raw(path);
     }
 
     /** A message with its placeholders filled in, still as MiniMessage (for menu lines). */
-    private String msg(String path, Object... keyValues) {
+    String msg(String path, Object... keyValues) {
         String raw = msg(path);
         for (int i = 0; i + 1 < keyValues.length; i += 2) {
             raw = raw.replace("<" + keyValues[i] + ">", String.valueOf(keyValues[i + 1]));
@@ -86,6 +89,7 @@ final class Pages {
             case "glows" -> cosmetics(player, profile, view, dialog, Category.GLOW, "glows", "<gold><bold>Glow");
             case "tags" -> cosmetics(player, profile, view, dialog, Category.TAG, "tags", "<gold><bold>Tags");
             case "gradients" -> cosmetics(player, profile, view, dialog, Category.GRADIENT, "gradients", "<gold><bold>Name Gradient");
+            case "particles" -> cosmetics(player, profile, view, dialog, Category.PARTICLE, "particles", "<gold><bold>Particles");
             case "perks" -> perks(profile, view, dialog);
             case "flags" -> flags(profile, view, dialog);
             case "sellwands" -> wands(view, dialog, false);
@@ -96,6 +100,9 @@ final class Pages {
             case "orbshop" -> orbShop(profile, view, dialog);
             case "settings" -> settings(player, view, dialog);
             case "prices" -> view.arg() == null ? pricePick() : prices(view, dialog);
+            case "sale" -> admin.sale(player, view, dialog);
+            case "items" -> admin.items(player, view, dialog);
+            case "item" -> admin.item(player, view, dialog);
             default -> main(player, profile);
         };
     }
@@ -106,10 +113,13 @@ final class Pages {
         ShopConfig cfg = cfg();
         Menu m = new Menu(cfg.title("main", "<gold><bold>Coinshop"));
         if (cfg.showBalance) m.body(balanceLine(profile));
+        saleLine(m, null);
+        List<String> mainIds = new ArrayList<>();
         m.infoIcon = Menu.Icon.of("GOLD_INGOT");
         for (String section : ShopConfig.SECTIONS) {
             if (!cfg.section(section)) continue;
-            Menu.Icon icon = Menu.Icon.of(SECTION_ICONS.get(section));
+            Menu.Icon icon = Menu.Icon.of(sectionIcon(section));
+            mainIds.add(section);
             if (section.equals("flags")) {
                 long now = System.currentTimeMillis();
                 Flags.Country shown = plugin.flags().rotating(cfg, now);
@@ -121,11 +131,16 @@ final class Pages {
                     (p, c, in) -> menus.open(p, View.of(section))));
         }
         if (player.hasPermission("dreamcoinshop.settings")) {
-            m.add(Menu.Button.of(Menu.Icon.of(SECTION_ICONS.get("settings")), msg("menu.button.settings"), null,
+            mainIds.add("settings");
+            m.add(Menu.Button.of(Menu.Icon.of(sectionIcon("settings")), msg("menu.button.settings"), null,
                     "<gray>" + Text.escape(cfg.description("settings", "")), (p, c, in) -> menus.open(p, View.of("settings"))));
         }
-        m.close = Menu.Button.of(Menu.Icon.of("BARRIER"), msg("menu.button.close"), null, null, (p, c, in) -> menus.close(p)).width(120);
-        m.rows = 0;
+        m.close = Menu.Button.of(Menu.Icon.of(cfg.guiIcon("close", "BARRIER")), msg("menu.button.close"), null, null, (p, c, in) -> menus.close(p)).width(120);
+        m.rows = cfg.guiMainRows;
+        for (int i = 0; i < m.buttons.size(); i++) {
+            Integer slot = cfg.guiMainSlots.get(mainIds.get(i));
+            if (slot != null) m.slots.put(i, slot);
+        }
         return m;
     }
 
@@ -135,8 +150,31 @@ final class Pages {
                 "orbs", Shop.format(Math.floor(profile.balance(Currency.ORBS))));
     }
 
-    private Menu.Button back(View to) {
-        return Menu.Button.of(Menu.Icon.of("ARROW"), msg("menu.button.back"), null, msg("menu.tooltip.back"),
+    /** The icon of a shop section: gui.icons in config.yml, or the built-in one. */
+    String sectionIcon(String section) {
+        return cfg().guiIcons.getOrDefault(section, SECTION_ICONS.getOrDefault(section, "PAPER"));
+    }
+
+    /** A price with the sale applied: "[800 coins -20%]" with the old one crossed out. */
+    private String priceStatus(String section, double base, boolean orbs) {
+        int pct = plugin.sales().percent(section);
+        double now = plugin.sales().price(section, base);
+        if (pct <= 0 || now == base) return msg(orbs ? "menu.status.price-orbs" : "menu.status.price", "price", Shop.format(base));
+        String key = (orbs ? "menu.status.price-sale-orbs" : "menu.status.price-sale") + (cfg().saleShowOldPrice ? "" : "-short");
+        return msg(key, "price", Shop.format(now), "old", Shop.format(base), "percent", pct);
+    }
+
+    /** The sale banner, if this section (or, for null, anything) is on sale. */
+    private void saleLine(Menu m, String section) {
+        Sales.Sale sale = plugin.sales().current();
+        long now = System.currentTimeMillis();
+        if (!sale.active(now) || section != null && !sale.covers(section)) return;
+        m.body(msg("menu.sale-line", "percent", sale.percent(), "time", Sales.time(sale.endsAt() - now),
+                "sections", Text.escape(plugin.sales().sectionNames(sale))));
+    }
+
+    Menu.Button back(View to) {
+        return Menu.Button.of(Menu.Icon.of(cfg().guiIcon("back", "ARROW")), msg("menu.button.back"), null, msg("menu.tooltip.back"),
                 (p, c, in) -> menus.open(p, to)).width(120);
     }
 
@@ -145,8 +183,9 @@ final class Pages {
     private Menu cosmetics(Player player, Profile profile, View view, boolean dialog, Category category, String section, String title) {
         Menu m = new Menu(cfg().title(section, title));
         m.back = back(View.of("main"));
-        m.infoIcon = Menu.Icon.of(SECTION_ICONS.get(section));
+        m.infoIcon = Menu.Icon.of(sectionIcon(section));
         m.body(balanceLine(profile));
+        saleLine(m, category.section);
         List<ShopConfig.Item> items = new ArrayList<>(cfg().items(category).values());
         List<ShopConfig.Item> page = paginate(m, view, items, dialog ? 40 : CHEST_PAGE);
         for (ShopConfig.Item item : page) {
@@ -181,13 +220,14 @@ final class Pages {
             case PERK -> "NETHER_STAR";
             case TAG -> "PAPER";
             case FLAG -> "WHITE_BANNER";
+            case PARTICLE -> "BLAZE_POWDER";
         };
     }
 
     private Menu.Button cosmeticButton(Profile profile, Category category, String key, Menu.Icon icon, String label, double price) {
         boolean owned = profile.owns(category, key);
         boolean active = owned && key.equals(profile.active(category));
-        String status = !owned ? msg("menu.status.price", "price", Shop.format(price))
+        String status = !owned ? priceStatus(category.section, price, false)
                 : active ? msg("menu.status.active") : msg("menu.status.owned");
         String tooltip = !owned ? msg("menu.tooltip.buy") : active ? msg("menu.tooltip.unequip") : msg("menu.tooltip.equip");
         return new Menu.Button(icon, label, status, tooltip, List.of(), active, 240, (p, c, in) -> {
@@ -203,10 +243,11 @@ final class Pages {
         m.back = back(View.of("main"));
         m.infoIcon = Menu.Icon.of("NETHER_STAR");
         m.body(balanceLine(profile));
+        saleLine(m, "perks");
         List<ShopConfig.Item> items = new ArrayList<>(cfg().items(Category.PERK).values());
         for (ShopConfig.Item perk : paginate(m, view, items, dialog ? 40 : CHEST_PAGE)) {
             boolean owned = profile.owns(Category.PERK, perk.key());
-            String status = owned ? msg("menu.status.perk-owned") : msg("menu.status.price", "price", Shop.format(perk.price()));
+            String status = owned ? msg("menu.status.perk-owned") : priceStatus("perks", perk.price(), false);
             m.add(new Menu.Button(icon(perk), "<yellow>" + perk.display(), status,
                     owned ? msg("menu.tooltip.owned") : msg("menu.tooltip.buy"), List.of(), owned, 220, (p, c, in) -> {
                 plugin.shop().buyPerk(p, perk.key());
@@ -224,6 +265,7 @@ final class Pages {
         Menu m = new Menu(cfg.title("flags", "<gold><bold>Flags"));
         m.back = back(View.of("main"));
         m.body(balanceLine(profile));
+        saleLine(m, "flags");
         List<Flags.Country> list = plugin.flags().search(cfg, view.query());
         Flags.Country shown = plugin.flags().rotating(cfg, System.currentTimeMillis());
         m.infoIcon = shown != null ? Menu.Icon.flag(shown) : Menu.Icon.of("WHITE_BANNER");
@@ -260,7 +302,7 @@ final class Pages {
         Menu m = new Menu(cfg().title(section, spawner ? "<gold><bold>Spawner Sellwands" : "<gold><bold>Sellwands"));
         m.back = back(View.of("main"));
         m.infoIcon = Menu.Icon.of(spawner ? "SPAWNER" : "BLAZE_ROD");
-        Profile profile = null;
+        saleLine(m, section);
         Map<String, ShopConfig.Wand> wands = spawner ? cfg().spawnerWands : cfg().sellwands;
         List<ShopConfig.Wand> list = new ArrayList<>(wands.values());
         for (ShopConfig.Wand wand : paginate(m, view, list, dialog ? 40 : CHEST_PAGE)) {
@@ -268,7 +310,7 @@ final class Pages {
                     : msg("menu.wand", "multiplier", Shop.format(wand.multiplier()), "uses", wand.uses());
             String label = (spawner ? "<light_purple>" : "<gold>") + wand.display() + " " + extra;
             m.add(new Menu.Button(Menu.Icon.of(spawner ? "SPAWNER" : "BLAZE_ROD"), label,
-                    msg("menu.status.price", "price", Shop.format(wand.price())),
+                    priceStatus(section, wand.price(), false),
                     msg(spawner ? "menu.tooltip.spawnerwand" : "menu.tooltip.sellwand"), List.of(), false, 260, (p, c, in) -> {
                 if (spawner) plugin.shop().buySpawnerWand(p, wand.key());
                 else plugin.shop().buySellwand(p, wand.key());
@@ -371,10 +413,11 @@ final class Pages {
         m.back = back(View.of("main"));
         m.infoIcon = Menu.Icon.of("ENDER_PEARL");
         m.body(profile.isLoaded() ? msg("menu.orbs-balance", "orbs", Shop.format(Math.floor(profile.balance(Currency.ORBS)))) : msg("menu.loading"));
+        saleLine(m, "orbshop");
         List<ShopConfig.OrbItem> items = new ArrayList<>(cfg().orbItems.values());
         for (ShopConfig.OrbItem item : paginate(m, view, items, dialog ? 40 : CHEST_PAGE)) {
             m.add(new Menu.Button(Menu.Icon.of(item.icon()), "<light_purple>" + item.display(),
-                    msg("menu.status.price-orbs", "price", Shop.format(item.price())), msg("menu.tooltip.buy"), List.of(), false, 220,
+                    priceStatus("orbshop", item.price(), true), msg("menu.tooltip.buy"), List.of(), false, 220,
                     (p, c, in) -> {
                         plugin.shop().buyOrbItem(p, item.key());
                         menus.refresh(p);
@@ -413,6 +456,10 @@ final class Pages {
                     (p, c, in) -> saveDialogSettings(p, in)).width(150));
             m.add(Menu.Button.of(Menu.Icon.of("GOLD_INGOT"), msg("menu.button.prices"), null, msg("menu.prices-pick"),
                     (p, c, in) -> menus.open(p, View.of("prices"))).width(150));
+            m.add(Menu.Button.of(Menu.Icon.of("WRITABLE_BOOK"), msg("menu.button.items"), null, msg("menu.tooltip.items"),
+                    (p, c, in) -> menus.open(p, View.of("items"))).width(150));
+            m.add(Menu.Button.of(Menu.Icon.of("CLOCK"), msg("menu.button.sale"), null, msg("menu.tooltip.sale"),
+                    (p, c, in) -> menus.open(p, View.of("sale"))).width(150));
             return m;
         }
         m.rows = 6;
@@ -443,6 +490,10 @@ final class Pages {
         }
         m.nav.add(Menu.Button.of(Menu.Icon.of("GOLD_INGOT"), msg("menu.button.prices"), null, msg("menu.prices-pick"),
                 (p, c, in) -> menus.open(p, View.of("prices"))).width(150));
+        m.nav.add(Menu.Button.of(Menu.Icon.of("WRITABLE_BOOK"), msg("menu.button.items"), null, msg("menu.tooltip.items"),
+                (p, c, in) -> menus.open(p, View.of("items"))).width(150));
+        m.nav.add(Menu.Button.of(Menu.Icon.of("CLOCK"), msg("menu.button.sale"), null, msg("menu.tooltip.sale"),
+                (p, c, in) -> menus.open(p, View.of("sale"))).width(150));
         return m;
     }
 
@@ -594,18 +645,18 @@ final class Pages {
     // ------------------------------------------------------------------ paging
 
     /** The items of the view's page, and the page line and previous/next buttons on the menu. */
-    private <T> List<T> paginate(Menu m, View view, List<T> all, int perPage) {
+    <T> List<T> paginate(Menu m, View view, List<T> all, int perPage) {
         int pages = Math.max(1, (all.size() + perPage - 1) / perPage);
         int page = Math.max(0, Math.min(view.page(), pages - 1));
         if (pages > 1) {
             m.body(msg("menu.page", "page", page + 1, "pages", pages));
             if (page > 0) {
-                m.nav.add(Menu.Button.of(Menu.Icon.of("ARROW"), msg("menu.button.previous"), null, msg("menu.tooltip.page"),
-                        (p, c, in) -> menus.open(p, view.page(page - 1))).width(120));
+                m.previous = Menu.Button.of(Menu.Icon.of(cfg().guiIcon("previous", "ARROW")), msg("menu.button.previous"), null,
+                        msg("menu.tooltip.page"), (p, c, in) -> menus.open(p, view.page(page - 1))).width(120);
             }
             if (page < pages - 1) {
-                m.nav.add(Menu.Button.of(Menu.Icon.of("SPECTRAL_ARROW"), msg("menu.button.next"), null, msg("menu.tooltip.page"),
-                        (p, c, in) -> menus.open(p, view.page(page + 1))).width(120));
+                m.next = Menu.Button.of(Menu.Icon.of(cfg().guiIcon("next", "SPECTRAL_ARROW")), msg("menu.button.next"), null,
+                        msg("menu.tooltip.page"), (p, c, in) -> menus.open(p, view.page(page + 1))).width(120);
             }
         }
         return all.subList(page * perPage, Math.min(all.size(), (page + 1) * perPage));

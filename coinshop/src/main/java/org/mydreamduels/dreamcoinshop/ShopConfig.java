@@ -25,11 +25,11 @@ import java.util.logging.Level;
 /** config.yml, read once per (re)load. Everything else reads these cached values. */
 final class ShopConfig {
 
-    static final int CONFIG_VERSION = 2;
+    static final int CONFIG_VERSION = 3;
 
     /** Anything a player can buy in a cosmetic category (colours, glows, perks, tags, gradients). */
     record Item(Category category, String key, String display, double price, String icon,
-                String color, List<String> gradient, boolean rainbow, String text, String permission) {
+                String color, List<String> gradient, boolean rainbow, String text, String permission, String effect) {
 
         boolean isGradient() {
             return gradient != null && gradient.size() >= 2;
@@ -45,6 +45,10 @@ final class ShopConfig {
     record OrbItem(String key, String display, double price, String icon, List<String> commands) {
     }
 
+    /** /coin pay and /orb pay rules. */
+    record Pay(boolean enabled, double min, double taxPercent, int cooldownSeconds) {
+    }
+
     enum MenuStyle { AUTO, DIALOG, GUI }
 
     enum BedrockFlags { TEXT, GLYPH, HIDE }
@@ -55,7 +59,20 @@ final class ShopConfig {
 
     /** The sections of the shop, in main menu order. */
     static final List<String> SECTIONS = List.of("chatcolors", "glows", "perks", "tags", "gradients", "flags",
-            "sellwands", "spawnerwands", "buycoins", "topcoins", "orbshop");
+            "particles", "sellwands", "spawnerwands", "buycoins", "topcoins", "orbshop");
+
+    // currency names
+    String coinsName = "Coins", coinName = "Coin", orbsName = "Orbs", orbName = "Orb", orbshopName = "Orbshop";
+    List<String> coinCommands = List.of(), orbCommands = List.of(), orbshopCommands = List.of();
+
+    // chest menu layout
+    String guiFiller = "BLACK_STAINED_GLASS_PANE";
+    boolean guiFillAll = false;
+    int guiMainRows = 0;
+    int guiInfoSlot = 4;
+    final Map<String, Integer> guiMainSlots = new LinkedHashMap<>();
+    final Map<String, String> guiIcons = new LinkedHashMap<>();
+    final Map<String, String> guiButtons = new LinkedHashMap<>();
 
     // menus
     MenuStyle menuStyle = MenuStyle.AUTO;
@@ -101,9 +118,21 @@ final class ShopConfig {
     double orbAmount = 1;
     boolean orbMessage = true;
 
+    boolean particlesEnabled = true;
+    boolean particlesVisibleToOthers = true;
+    int particlesIntervalTicks = 2;
+    boolean particlesWhenInvisible = false;
+
+    boolean saleBroadcast = true;
+    boolean saleShowOldPrice = true;
+
+    Pay payCoins = new Pay(true, 1, 0, 3);
+    Pay payOrbs = new Pay(false, 1, 0, 3);
+
     int topSize = 10;
     int topFullSize = 50;
     int topRefreshSeconds = 30;
+    String topPlaceholderNone = "---";
 
     Storage storage;
 
@@ -151,6 +180,14 @@ final class ShopConfig {
     }
 
     private void read(FileConfiguration cfg, JavaPlugin plugin) {
+        coinsName = name(cfg.getString("currencies.coins.name"), "Coins");
+        coinName = name(cfg.getString("currencies.coins.name-singular"), singular(coinsName));
+        orbsName = name(cfg.getString("currencies.orbs.name"), "Orbs");
+        orbName = name(cfg.getString("currencies.orbs.name-singular"), singular(orbsName));
+        orbshopName = name(cfg.getString("currencies.orbs.shop-name"), orbName.equals("Orb") ? "Orbshop" : orbName + " Shop");
+        coinCommands = commandNames(cfg.getStringList("currencies.coins.commands"));
+        orbCommands = commandNames(cfg.getStringList("currencies.orbs.commands"));
+        orbshopCommands = commandNames(cfg.getStringList("currencies.orbs.shop-commands"));
         menuStyle = enumOr(MenuStyle.class, cfg.getString("menu.style"), MenuStyle.AUTO);
         bedrockStyle = enumOr(MenuStyle.class, cfg.getString("menu.bedrock-style"), MenuStyle.GUI);
         if (bedrockStyle == MenuStyle.AUTO) bedrockStyle = MenuStyle.GUI;
@@ -158,6 +195,18 @@ final class ShopConfig {
         showBalance = cfg.getBoolean("menu.show-balance", true);
         readStrings(cfg.getConfigurationSection("menu.titles"), titles);
         readStrings(cfg.getConfigurationSection("menu.descriptions"), descriptions);
+        guiFiller = cfg.getString("gui.filler", "BLACK_STAINED_GLASS_PANE");
+        guiFillAll = cfg.getBoolean("gui.fill-empty", false);
+        guiMainRows = cfg.getInt("gui.main-rows", 0);
+        if (guiMainRows != 0) guiMainRows = clamp(guiMainRows, 3, 6);
+        guiInfoSlot = clamp(cfg.getInt("gui.info-slot", 4), 0, 8);
+        guiMainSlots.clear();
+        ConfigurationSection slots = cfg.getConfigurationSection("gui.main-slots");
+        if (slots != null) {
+            for (String key : slots.getKeys(false)) if (slots.isInt(key) && slots.getInt(key) >= 0) guiMainSlots.put(key, slots.getInt(key));
+        }
+        readStrings(cfg.getConfigurationSection("gui.icons"), guiIcons);
+        readStrings(cfg.getConfigurationSection("gui.buttons"), guiButtons);
         sections.clear();
         for (String s : SECTIONS) sections.put(s, cfg.getBoolean("categories." + s, true));
 
@@ -203,9 +252,19 @@ final class ShopConfig {
         orbAmount = Math.max(0, cfg.getDouble("orbs.payout.amount", 1));
         orbMessage = cfg.getBoolean("orbs.payout.message", true);
 
+        particlesEnabled = sections.getOrDefault("particles", true);
+        particlesVisibleToOthers = cfg.getBoolean("particle-settings.visible-to-others", true);
+        particlesIntervalTicks = clamp(cfg.getInt("particle-settings.interval-ticks", 2), 1, 40);
+        particlesWhenInvisible = cfg.getBoolean("particle-settings.when-invisible", false);
+        saleBroadcast = cfg.getBoolean("sale.broadcast", true);
+        saleShowOldPrice = cfg.getBoolean("sale.show-old-price", true);
+        payCoins = readPay(cfg, "pay.coins", true);
+        payOrbs = readPay(cfg, "pay.orbs", false);
+
         topSize = clamp(cfg.getInt("top.size", 10), 1, 45);
         topFullSize = clamp(cfg.getInt("top.full-size", 50), topSize, 100);
         topRefreshSeconds = clamp(cfg.getInt("top.refresh-seconds", 30), 5, 3600);
+        topPlaceholderNone = cfg.getString("top.placeholder-none", "---");
 
         String type = cfg.getString("storage.type", "SQLITE").trim().toUpperCase(Locale.ROOT);
         int defaultPort = type.startsWith("POSTGRES") ? 5432 : type.equals("REDIS") ? 6379 : 3306;
@@ -228,6 +287,7 @@ final class ShopConfig {
         readItems(cfg, "perks", Category.PERK, 100);
         readItems(cfg, "tags", Category.TAG, 1000);
         readItems(cfg, "namegradients", Category.GRADIENT, 1000);
+        readItems(cfg, "particles", Category.PARTICLE, 2000);
 
         readWands(cfg.getConfigurationSection("sellwands"), sellwands, 800);
         readWands(cfg.getConfigurationSection("spawnerwands"), spawnerWands, 1200);
@@ -269,7 +329,8 @@ final class ShopConfig {
                 else if (s.isList("gradient")) gradient = List.copyOf(s.getStringList("gradient"));
                 map.put(key, new Item(category, key, s.getString("display", key), Math.max(0, s.getDouble("price", defaultPrice)),
                         s.getString("icon", null), s.getString("color", null), gradient, s.getBoolean("rainbow", false),
-                        s.getString("text", key), s.getString("permission", "dreamcoinshop.perk." + key)));
+                        s.getString("text", key), s.getString("permission", "dreamcoinshop.perk." + key),
+                        s.getString("effect", key.toUpperCase(Locale.ROOT))));
             }
         }
         items.put(category, Collections.unmodifiableMap(map));
@@ -296,6 +357,47 @@ final class ShopConfig {
         }
     }
 
+    private static Pay readPay(FileConfiguration cfg, String path, boolean enabledByDefault) {
+        return new Pay(cfg.getBoolean(path + ".enabled", enabledByDefault), Math.max(0, cfg.getDouble(path + ".min", 1)),
+                Math.max(0, Math.min(100, cfg.getDouble(path + ".tax-percent", 0))), clamp(cfg.getInt(path + ".cooldown-seconds", 3), 0, 3600));
+    }
+
+    Pay pay(Currency c) {
+        return c == Currency.COINS ? payCoins : payOrbs;
+    }
+
+    /** "Shards" -> "Shard". */
+    private static String singular(String plural) {
+        return plural.length() > 1 && (plural.endsWith("s") || plural.endsWith("S")) ? plural.substring(0, plural.length() - 1) : plural;
+    }
+
+    private static String name(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private static List<String> commandNames(List<String> raw) {
+        List<String> out = new ArrayList<>();
+        for (String s : raw) {
+            String c = s.trim().toLowerCase(Locale.ROOT).replaceFirst("^/", "");
+            if (c.matches("[a-z0-9_-]{1,32}")) out.add(c);
+        }
+        return List.copyOf(out);
+    }
+
+    /** Puts the currency names into a text: &lt;coins_name&gt;, &lt;orbs_lower&gt; ... */
+    String names(String text) {
+        if (text == null || text.indexOf('<') < 0) return text;
+        return text.replace("<coins_name>", coinsName).replace("<coins_lower>", coinsName.toLowerCase(Locale.ROOT))
+                .replace("<coin_name>", coinName).replace("<orbs_name>", orbsName)
+                .replace("<orbs_lower>", orbsName.toLowerCase(Locale.ROOT)).replace("<orb_name>", orbName)
+                .replace("<orbshop_name>", orbshopName);
+    }
+
+    /** The display name of a currency ("Coins" / "Orbs" or what they were renamed to). */
+    String currencyName(Currency c) {
+        return c == Currency.COINS ? coinsName : orbsName;
+    }
+
     Map<String, Item> items(Category c) {
         return items.getOrDefault(c, Map.of());
     }
@@ -304,16 +406,22 @@ final class ShopConfig {
         return key == null ? null : items(c).get(key);
     }
 
+    /** A fixed button's material (gui.buttons): back, close, next, previous. */
+    String guiIcon(String button, String fallback) {
+        String v = guiButtons.get(button);
+        return v == null || v.isBlank() ? fallback : v;
+    }
+
     boolean section(String id) {
         return sections.getOrDefault(id, true);
     }
 
     String title(String key, String fallback) {
-        return titles.getOrDefault(key, fallback);
+        return names(titles.getOrDefault(key, fallback));
     }
 
     String description(String key, String fallback) {
-        return descriptions.getOrDefault(key, fallback);
+        return names(descriptions.getOrDefault(key, fallback));
     }
 
     double sellPrice(String material) {
@@ -329,7 +437,12 @@ final class ShopConfig {
      */
     private static void upgrade(JavaPlugin plugin, YamlConfiguration old) {
         File file = new File(plugin.getDataFolder(), "config.yml");
-        if (old.getInt("config-version", 1) >= CONFIG_VERSION) return;
+        int version = old.getInt("config-version", 1);
+        if (version >= CONFIG_VERSION) return;
+        if (version == 2) {
+            upgradeFrom2(plugin, file);
+            return;
+        }
         // Only a real version 1 file (it had "settings:") is rebuilt; anything else just gets the number
         if (!old.isConfigurationSection("settings")) {
             try {
@@ -398,6 +511,78 @@ final class ShopConfig {
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Could not upgrade config.yml - your old file is config-old.yml", e);
         }
+    }
+
+    /** Old default texts that now use the currency names. Owners' own texts are left alone. */
+    private static final Map<String, String> RENAMED_DEFAULTS = Map.of(
+            "\"<gold><bold>Buy Coins\"", "\"<gold><bold>Buy <coins_name>\"",
+            "\"<gold><bold>Top Coins\"", "\"<gold><bold>Top <coins_name>\"",
+            "\"<light_purple><bold>Orbshop\"", "\"<light_purple><bold><orbshop_name>\"",
+            "\"<light_purple><bold>Orbs Top\"", "\"<light_purple><bold><orbs_name> Top\"",
+            "\"Top up your Coins balance with real money\"", "\"Top up your <coins_name> balance with real money\"",
+            "\"See who has the most Coins on the server\"", "\"See who has the most <coins_name> on the server\"",
+            "\"Spend your Orbs on spawners\"", "\"Spend your <orbs_name> on spawners\"");
+
+    /** Top-level sections added in version 3; copied into an older file with their comments. */
+    private static final List<String> NEW_IN_3 = List.of("gui", "sale", "pay", "particle-settings", "particles");
+
+    /**
+     * Version 2 to 3: adds the new sections (currencies, sale, pay, particles - with their comments,
+     * from the bundled file) and switches the default titles to the currency names. Done on the
+     * text, so every comment and every value the owner changed stays.
+     */
+    private static void upgradeFrom2(JavaPlugin plugin, File file) {
+        try {
+            String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+            String bundled;
+            try (InputStream in = plugin.getResource("config.yml")) {
+                bundled = in == null ? "" : new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            String updated = text.replaceFirst("(?m)^config-version:\\s*2\\s*$", "config-version: " + CONFIG_VERSION);
+            String currencies = section(bundled, "currencies");
+            if (!hasSection(updated, "currencies") && currencies != null) {
+                updated = updated.replaceFirst("(?m)^(config-version: " + CONFIG_VERSION + ")$",
+                        "$1\n\n" + java.util.regex.Matcher.quoteReplacement(currencies.stripTrailing()));
+            }
+            StringBuilder added = new StringBuilder();
+            for (String key : NEW_IN_3) {
+                String block = section(bundled, key);
+                if (block != null && !hasSection(updated, key)) added.append("\n\n").append(block.stripTrailing());
+            }
+            if (added.length() > 0) updated = updated.stripTrailing() + added + "\n";
+            for (Map.Entry<String, String> e : RENAMED_DEFAULTS.entrySet()) updated = updated.replace(e.getKey(), e.getValue());
+            if (updated.equals(text)) return;
+            Files.copy(file.toPath(), new File(plugin.getDataFolder(), "config-v2-backup.yml").toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.writeString(file.toPath(), updated, StandardCharsets.UTF_8);
+            plugin.getLogger().info("config.yml updated with the new sections (currency names, sale, pay, particles). "
+                    + "Backup: config-v2-backup.yml");
+        } catch (IOException e) {
+            plugin.getLogger().warning("Could not update config.yml to version " + CONFIG_VERSION + ": " + e.getMessage());
+        }
+    }
+
+    private static boolean hasSection(String file, String key) {
+        return java.util.regex.Pattern.compile("(?m)^" + java.util.regex.Pattern.quote(key) + ":").matcher(file).find();
+    }
+
+    /** A top-level section of a yml file with the comment lines right above it, as text. */
+    private static String section(String file, String key) {
+        String[] lines = file.split("\n", -1);
+        int at = -1;
+        for (int i = 0; i < lines.length; i++) if (lines[i].startsWith(key + ":")) at = i;
+        if (at < 0) return null;
+        int start = at;
+        while (start > 0 && lines[start - 1].startsWith("#")) start--;
+        int next = lines.length;
+        for (int i = at + 1; i < lines.length; i++) {
+            if (lines[i].matches("[A-Za-z][\\w-]*:.*")) {
+                next = i;
+                break;
+            }
+        }
+        int end = next;
+        while (end > at + 1 && (lines[end - 1].startsWith("#") || lines[end - 1].isBlank())) end--;
+        return String.join("\n", java.util.Arrays.copyOfRange(lines, start, end)) + "\n";
     }
 
     private static void copy(YamlConfiguration from, YamlConfiguration to, String fromPath, String toPath) {

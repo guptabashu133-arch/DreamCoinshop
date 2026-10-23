@@ -91,6 +91,10 @@ final class Menu {
     /** Main menu only: a Close button (dialogs). */
     Button close;
     int columns = 2;
+    /** Paging buttons (dialogs: around the nav buttons; chest menus: bottom corners). */
+    Menu.Button previous, next;
+    /** Chest menus: button index -> slot (gui.main-slots). Buttons not in here fill the inner slots. */
+    final Map<Integer, Integer> slots = new java.util.HashMap<>();
     /** Flags drawn small under the body, so the client has their pictures before they're needed. */
     final List<Flags.Country> preload = new ArrayList<>();
     /** Inputs shown at the top of a dialog. */

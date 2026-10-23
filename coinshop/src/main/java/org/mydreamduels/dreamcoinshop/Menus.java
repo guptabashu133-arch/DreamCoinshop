@@ -129,9 +129,12 @@ final class Menus implements Listener {
         r.show(player, menu, view, userAction);
     }
 
+    /** Screens only admins (dreamcoinshop.settings) may open. */
+    static final java.util.Set<String> ADMIN_VIEWS = java.util.Set.of("settings", "prices", "sale", "items", "item");
+
     private boolean allowed(Player player, Pages.View view) {
         String id = view.id();
-        if (id.equals("settings") || id.equals("prices")) return player.hasPermission("dreamcoinshop.settings");
+        if (ADMIN_VIEWS.contains(id)) return player.hasPermission("dreamcoinshop.settings");
         if (id.equals("orbstop")) return plugin.config().section("orbshop");
         if (SECTIONS.contains(id) && !plugin.config().section(id)) {
             plugin.text().send(player, "shop.section-off", null);
