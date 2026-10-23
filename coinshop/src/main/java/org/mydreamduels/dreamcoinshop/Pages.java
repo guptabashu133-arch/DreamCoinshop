@@ -137,10 +137,16 @@ final class Pages {
         }
         m.close = Menu.Button.of(Menu.Icon.of(cfg.guiIcon("close", "BARRIER")), msg("menu.button.close"), null, null, (p, c, in) -> menus.close(p)).width(120);
         m.rows = cfg.guiMainRows;
+        int lastSlot = -1;
         for (int i = 0; i < m.buttons.size(); i++) {
             Integer slot = cfg.guiMainSlots.get(mainIds.get(i));
-            if (slot != null) m.slots.put(i, slot);
+            if (slot != null) {
+                m.slots.put(i, slot);
+                lastSlot = Math.max(lastSlot, slot);
+            }
         }
+        // Automatic rows: make room for the lowest fixed slot (plus the bottom row)
+        if (m.rows == 0 && lastSlot >= 0) m.rows = Math.max(3, Math.min(6, lastSlot / 9 + 2));
         return m;
     }
 
