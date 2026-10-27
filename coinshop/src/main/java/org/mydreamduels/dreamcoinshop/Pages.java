@@ -392,7 +392,10 @@ final class Pages {
                 default -> "<white>";
             };
             String name = e.name() == null ? "?" : Text.escape(e.name());
-            Flags.Country flag = e.flag() == null || !cfg().section("flags") ? null : plugin.flags().get(e.flag());
+            // Online players: the flag they have on right now (the list itself is reloaded every top.refresh-seconds)
+            Profile live = plugin.data().online(e.uuid());
+            Flags.Country flag = live != null && live.isLoaded() ? plugin.cosmetics().flag(live)
+                    : e.flag() == null || !cfg().section("flags") ? null : plugin.flags().get(e.flag());
             String label = msg("menu.top-entry", "rank", color + "#" + rank,
                     "player", (self ? "<aqua>" : "<white>") + name + "</" + (self ? "aqua" : "white") + ">");
             String amount = msg(orbs ? "menu.top-entry-orbs" : "menu.top-entry-coins", "amount", Shop.format(Math.floor(e.balance())));
