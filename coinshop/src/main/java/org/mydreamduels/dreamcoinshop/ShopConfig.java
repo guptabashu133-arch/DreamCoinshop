@@ -43,7 +43,8 @@ final class ShopConfig {
     record BuyTier(String key, String priceLabel, long coins) {
     }
 
-    record OrbItem(String key, String display, double price, String icon, List<String> commands) {
+    /** items: given straight into the inventory ("DIAMOND 8"); commands: run by the console. Either or both. */
+    record OrbItem(String key, String display, double price, String icon, List<String> commands, List<String> items) {
     }
 
     /** /coin pay and /orb pay rules. */
@@ -364,7 +365,7 @@ final class ShopConfig {
                 ConfigurationSection s = os.getConfigurationSection(key);
                 if (s != null) {
                     orbItems.put(key, new OrbItem(key, s.getString("display", key), Math.max(0, s.getDouble("price", 10)),
-                            s.getString("icon", "SPAWNER"), List.copyOf(s.getStringList("commands"))));
+                            s.getString("icon", "SPAWNER"), List.copyOf(s.getStringList("commands")), List.copyOf(s.getStringList("items"))));
                 }
             }
         }

@@ -101,7 +101,7 @@ menu:
     spawnerwands: "Buy wands that instantly sell spawners at a bonus rate"
     buycoins: "Top up your <coins_name> balance with real money"
     topcoins: "See who has the most <coins_name> on the server"
-    orbshop: "Spend your <orbs_name> on rare items"
+    orbshop: "Spend your <orbs_name> on spawners"
     settings: "Change the shop settings and prices (admins)"
 
 # ─────────────────────────────── chest menu layout ───────────────────────────────
@@ -560,55 +560,78 @@ buycoins:
   tier5: { price-label: "$49.99", coins: 15000 }
 
 # ---------------- Shard Shop (spend Shards) ----------------
-# commands: run by the console when bought, %player% = the buyer. Anything works: vanilla
-# /give, a crate key, a spawner from your spawner plugin, a rank...
-#   e.g. a crate key:  commands: ["crates key give %player% vote 1"]
+# Spawners for Shards. commands: run by the console when bought, %player% = the buyer.
+# Each item can give:
+#   items:     things straight into the inventory, no plugin needed:  items: ["DIAMOND 8", "GOLDEN_APPLE 2"]
+#   commands:  console commands of any plugin, %player% = the buyer:  commands: ["crates key give %player% vote 1"]
+#   (or both)
+# The spawners below use DreamSpawners ("ds give <player> <TYPE> [amount]"). With another
+# spawner plugin, put that plugin's own "give spawner" command here instead (see its page).
+# If a command fails (e.g. the plugin isn't installed), the buyer gets their Shards back.
+# Example of an item that needs no plugin at all:
+#   diamonds:
+#     display: "8 Diamonds"
+#     price: 40
+#     icon: DIAMOND
+#     items: ["DIAMOND 8"]
 orbshop:
-  diamonds:
-    display: "8 Diamonds"
-    price: 40
-    icon: DIAMOND
-    commands:
-      - "give %player% diamond 8"
-  golden_apples:
-    display: "2 Enchanted Golden Apples"
-    price: 80
-    icon: ENCHANTED_GOLDEN_APPLE
-    commands:
-      - "give %player% enchanted_golden_apple 2"
-  totem:
-    display: "Totem of Undying"
+  zombie:
+    display: "Zombie Spawner"
     price: 100
-    icon: TOTEM_OF_UNDYING
+    icon: ZOMBIE_SPAWN_EGG
     commands:
-      - "give %player% totem_of_undying 1"
-  experience:
-    display: "30 Levels of XP"
-    price: 60
-    icon: EXPERIENCE_BOTTLE
-    commands:
-      - "xp add %player% 30 levels"
-  netherite:
-    display: "Netherite Ingot"
-    price: 150
-    icon: NETHERITE_INGOT
-    commands:
-      - "give %player% netherite_ingot 1"
-  shulker:
-    display: "Shulker Box"
+      - "ds give %player% ZOMBIE 1"
+  skeleton:
+    display: "Skeleton Spawner"
     price: 120
-    icon: SHULKER_BOX
+    icon: SKELETON_SPAWN_EGG
     commands:
-      - "give %player% shulker_box 1"
-  elytra:
-    display: "Elytra"
+      - "ds give %player% SKELETON 1"
+  allay:
+    display: "Allay Spawner"
+    price: 150
+    icon: ALLAY_SPAWN_EGG
+    commands:
+      - "ds give %player% ALLAY 1"
+  blaze:
+    display: "Blaze Spawner"
+    price: 250
+    icon: BLAZE_SPAWN_EGG
+    commands:
+      - "ds give %player% BLAZE 1"
+  enderman:
+    display: "Enderman Spawner"
     price: 300
-    icon: ELYTRA
+    icon: ENDERMAN_SPAWN_EGG
     commands:
-      - "give %player% elytra 1"
-  beacon:
-    display: "Beacon"
-    price: 400
-    icon: BEACON
+      - "ds give %player% ENDERMAN 1"
+  creeper:
+    display: "Creeper Spawner"
+    price: 450
+    icon: CREEPER_SPAWN_EGG
     commands:
-      - "give %player% beacon 1"
+      - "ds give %player% CREEPER 1"
+  turtle:
+    display: "Turtle Spawner"
+    price: 600
+    icon: TURTLE_SPAWN_EGG
+    commands:
+      - "ds give %player% TURTLE 1"
+  breeze:
+    display: "Breeze Spawner"
+    price: 700
+    icon: BREEZE_SPAWN_EGG
+    commands:
+      - "ds give %player% BREEZE 1"
+  iron_golem:
+    display: "Iron Golem Spawner"
+    price: 850
+    icon: IRON_GOLEM_SPAWN_EGG
+    commands:
+      - "ds give %player% IRON_GOLEM 1"
+  evoker:
+    display: "Evoker Spawner"
+    price: 1000
+    icon: EVOKER_SPAWN_EGG
+    commands:
+      - "ds give %player% EVOKER 1"

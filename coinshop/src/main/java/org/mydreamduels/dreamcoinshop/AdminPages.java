@@ -57,7 +57,8 @@ final class AdminPages {
             new Section("sellwands", "sellwands", "BLAZE_ROD", List.of(DISPLAY, PRICE, Field.number("multiplier"), Field.number("uses"))),
             new Section("spawnerwands", "spawnerwands", "SPAWNER", List.of(DISPLAY, PRICE, Field.number("multiplier"),
                     new Field("commands", Kind.LIST, List.of(), "|"))),
-            new Section("orbshop", "orbshop", "PRISMARINE_SHARD", List.of(DISPLAY, PRICE, ICON, new Field("commands", Kind.LIST, List.of(), "|"))));
+            new Section("orbshop", "orbshop", "PRISMARINE_SHARD", List.of(DISPLAY, PRICE, ICON, new Field("commands", Kind.LIST, List.of(), "|"),
+                    new Field("items", Kind.LIST, List.of(), ","))));
 
     static Section section(String id) {
         for (Section s : SECTIONS) if (s.id().equals(id)) return s;

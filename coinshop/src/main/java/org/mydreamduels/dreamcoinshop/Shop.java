@@ -215,8 +215,31 @@ final class Shop {
             plugin.sounds().play(player, "purchase-fail");
             return;
         }
+        List<ItemStack> stacks = new java.util.ArrayList<>();
+        for (String spec : item.items()) {
+            ItemStack st = itemSpec(spec);
+            if (st != null) stacks.add(st);
+            else plugin.getLogger().warning("orbshop." + key + ".items: \"" + spec + "\" isn't an item (write it like \"DIAMOND 8\").");
+        }
+        if (item.commands().isEmpty()) {
+            if (stacks.isEmpty()) { // nothing to give: don't take the money
+                refund(player, Currency.ORBS, price);
+                text().send(player, "shop.give-failed", Ph.of("item", Text.plain(item.display())));
+                plugin.sounds().play(player, "purchase-fail");
+                return;
+            }
+            for (ItemStack st : stacks) give(player, st);
+            log(player, "orbshop " + key, price, Currency.ORBS);
+            text().send(player, "orbs.purchased", Ph.of("item", Text.plain(item.display()), "price", format(price)));
+            plugin.sounds().play(player, "purchase-success");
+            return;
+        }
         List<String> commands = item.commands().stream().map(c -> c.replace("%player%", player.getName())).toList();
         runCommands(commands, ok -> {
+            // items after the commands worked (also when only some did: no refund then either)
+            if ((ok == null || ok) && !stacks.isEmpty()) platform.forPlayer(player, () -> {
+                if (player.isOnline()) for (ItemStack st : stacks) give(player, st);
+            });
             if (ok == null) {
                 log(player, "orbshop " + key + " (partly given)", price, Currency.ORBS);
                 text().send(player, "shop.give-partly", Ph.of("item", Text.plain(item.display())));
@@ -231,6 +254,22 @@ final class Shop {
                 plugin.sounds().play(player, "purchase-fail");
             }
         });
+    }
+
+    /** "DIAMOND 8", "DIAMOND:8" or "DIAMOND" -> the item; null if it isn't one. */
+    static ItemStack itemSpec(String spec) {
+        String[] parts = spec.trim().split("[\\s:x*]+");
+        if (parts.length == 0 || parts[0].isEmpty()) return null;
+        Material m = Material.matchMaterial(parts[0]);
+        if (m == null || !m.isItem() || m.isAir()) return null;
+        int amount = 1;
+        if (parts.length > 1) {
+            try {
+                amount = Math.max(1, Math.min(m.getMaxStackSize() * 36, Integer.parseInt(parts[1])));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return new ItemStack(m, amount);
     }
 
     private void refund(Player player, Currency c, double amount) {

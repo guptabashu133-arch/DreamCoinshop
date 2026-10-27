@@ -203,6 +203,7 @@ editor:
     multiplier: "Sell multiplier"
     uses: "Uses"
     commands: "Commands (split with |)"
+    items: "Items to give (like DIAMOND 8, split with ,)"
 
 # Settings -> Sale
 sale-menu:
