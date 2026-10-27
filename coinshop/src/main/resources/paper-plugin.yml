@@ -1,0 +1,83 @@
+# Paper, Purpur, Leaf and Folia load DreamCoinshop from this file; Spigot uses plugin.yml.
+# (A Paper plugin isn't rewritten by the server while it loads; commands are registered in code.)
+name: Dreamcoinshop
+version: '2.0.0'
+main: org.mydreamduels.dreamcoinshop.Dreamcoinshop
+api-version: '1.20'
+folia-supported: true
+author: BasuGamer56
+website: https://dreamscube.fun
+description: Cosmetics shop with dialog and chest menus - country flags, particles, perks, sellwands, Shards, sales and cross-server sync
+
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    Vault:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    Essentials:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    CMI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    floodgate:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    Geyser-Spigot:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    ViaVersion:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
+permissions:
+  dreamcoinshop.use:
+    description: Open /coinshop and /orbshop and buy things.
+    default: true
+  dreamcoinshop.pay:
+    description: Send Coins / Orbs to other players with /coin pay (when pay is enabled in config.yml).
+    default: true
+  dreamcoinshop.admin:
+    description: Give, remove and set Coins/Orbs, /coinshop reload and sale, and the Settings menu.
+    default: op
+    children:
+      dreamcoinshop.settings: true
+  dreamcoinshop.settings:
+    description: Change the plugin settings and prices from /coinshop -> Settings.
+    default: op
+  # Perk permissions: given to players who bought the perk. The perk commands (/craft,
+  # /anvil, /nick ...) are built into DreamCoinshop; give a rank one of these to let it
+  # use that command without buying it.
+  dreamcoinshop.perk.craft:
+    default: false
+  dreamcoinshop.perk.smithingtable:
+    default: false
+  dreamcoinshop.perk.grindstone:
+    default: false
+  dreamcoinshop.perk.anvil:
+    default: false
+  dreamcoinshop.perk.enderchest:
+    default: false
+  dreamcoinshop.perk.nick:
+    default: false
+  dreamcoinshop.perk.loom:
+    default: false
+  dreamcoinshop.perk.stonecutter:
+    default: false
+  dreamcoinshop.perk.trash:
+    default: false
+  dreamcoinshop.perk.hat:
+    default: false
+  dreamcoinshop.nick.colors:
+    description: Use colours (<red>, <#FF0000>, gradients) in a /nick nickname.
+    default: op

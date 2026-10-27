@@ -3,7 +3,6 @@ package org.mydreamduels.dreamcoinshop;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
@@ -20,9 +19,9 @@ final class CommandAliases {
 
     /** One extra name: everything goes to the real command (permissions, executor, tab completion). */
     private static final class Alias extends Command {
-        private final PluginCommand target;
+        private final Command target;
 
-        Alias(String name, PluginCommand target) {
+        Alias(String name, Command target) {
             super(name, target.getDescription(), "/" + name, List.of());
             this.target = target;
             setPermission(target.getPermission());
@@ -39,10 +38,10 @@ final class CommandAliases {
         }
     }
 
-    static void register(JavaPlugin plugin, String command, List<String> names) {
+    static void register(JavaPlugin plugin, Command target, List<String> names) {
         if (names.isEmpty()) return;
-        PluginCommand target = plugin.getCommand(command);
         CommandMap map = commandMap(plugin);
+        String command = target == null ? "?" : target.getName();
         if (target == null || map == null) {
             plugin.getLogger().warning("Could not add the extra command names " + names + " for /" + command + ".");
             return;

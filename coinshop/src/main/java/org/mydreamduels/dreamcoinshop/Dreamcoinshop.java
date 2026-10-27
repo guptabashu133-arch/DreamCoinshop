@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.sql.Driver;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -87,13 +88,13 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         cosmetics.start();
 
         ShopCommand shopCommand = new ShopCommand(this);
-        command("coinshop", shopCommand);
-        command("orbshop", shopCommand);
-        command("coin", new CurrencyCommand(this, Currency.COINS));
-        command("orb", new CurrencyCommand(this, Currency.ORBS));
-        CommandAliases.register(this, "coin", cfg.coinCommands);
-        CommandAliases.register(this, "orb", cfg.orbCommands);
-        CommandAliases.register(this, "orbshop", cfg.orbshopCommands);
+        command("coinshop", shopCommand, "Opens the Coinshop", List.of("cs"));
+        command("orbshop", shopCommand, "Opens the Shard Shop", List.of());
+        command("coin", new CurrencyCommand(this, Currency.COINS), "Coins balance and pay", List.of());
+        command("orb", new CurrencyCommand(this, Currency.ORBS), "Shards balance and pay", List.of());
+        CommandAliases.register(this, commands.get("coin"), cfg.coinCommands);
+        CommandAliases.register(this, commands.get("orb"), cfg.orbCommands);
+        CommandAliases.register(this, commands.get("orbshop"), cfg.orbshopCommands);
         PerkCommands perkCommands = new PerkCommands(this);
         getServer().getPluginManager().registerEvents(perkCommands, this);
         perkCommands.register();
@@ -133,11 +134,64 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         if (data != null) data.stop();
     }
 
-    private void command(String name, TabExecutor executor) {
-        PluginCommand cmd = getCommand(name);
-        if (cmd == null) return;
-        cmd.setExecutor(executor);
-        cmd.setTabCompleter(executor);
+    /** The plugin's own commands, by name (a plugin.yml command, or one registered from code). */
+    private final java.util.Map<String, org.bukkit.command.Command> commands = new java.util.HashMap<>();
+
+    /**
+     * Spigot reads the commands from plugin.yml. Paper, Purpur, Leaf and Folia load the plugin
+     * from paper-plugin.yml (no bytecode rewriting at load time), which can't declare commands:
+     * there they are registered here.
+     */
+    private void command(String name, TabExecutor executor, String description, List<String> aliases) {
+        PluginCommand cmd = null;
+        try {
+            cmd = getCommand(name);
+        } catch (UnsupportedOperationException paperPlugin) {
+            // loaded from paper-plugin.yml
+        }
+        if (cmd != null) {
+            cmd.setExecutor(executor);
+            cmd.setTabCompleter(executor);
+            commands.put(name, cmd);
+            return;
+        }
+        CodeCommand code = new CodeCommand(this, name, description, aliases, executor);
+        org.bukkit.command.CommandMap map = CommandAliases.commandMap(this);
+        if (map == null) {
+            getLogger().severe("Could not register /" + name + " (no command map).");
+            return;
+        }
+        map.register(getName().toLowerCase(java.util.Locale.ROOT), code);
+        commands.put(name, code);
+    }
+
+    /** A command registered from code, for Paper plugins. */
+    private static final class CodeCommand extends org.bukkit.command.Command implements org.bukkit.command.PluginIdentifiableCommand {
+        private final Dreamcoinshop plugin;
+        private final TabExecutor executor;
+
+        CodeCommand(Dreamcoinshop plugin, String name, String description, List<String> aliases, TabExecutor executor) {
+            super(name, description, "/" + name, aliases);
+            this.plugin = plugin;
+            this.executor = executor;
+        }
+
+        @Override
+        public boolean execute(org.bukkit.command.CommandSender sender, String label, String[] args) {
+            if (!plugin.isEnabled()) return false;
+            return executor.onCommand(sender, this, label, args);
+        }
+
+        @Override
+        public List<String> tabComplete(org.bukkit.command.CommandSender sender, String alias, String[] args) {
+            List<String> out = executor.onTabComplete(sender, this, alias, args);
+            return out == null ? List.of() : out;
+        }
+
+        @Override
+        public org.bukkit.plugin.Plugin getPlugin() {
+            return plugin;
+        }
     }
 
     // ------------------------------------------------------------------ storage
