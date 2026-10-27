@@ -59,7 +59,7 @@ final class CommandAliases {
     }
 
     /** Paper has Server#getCommandMap(); Spigot's server class has the same public method. */
-    private static CommandMap commandMap(JavaPlugin plugin) {
+    static CommandMap commandMap(JavaPlugin plugin) {
         try {
             Object map = plugin.getServer().getClass().getMethod("getCommandMap").invoke(plugin.getServer());
             return map instanceof CommandMap m ? m : null;

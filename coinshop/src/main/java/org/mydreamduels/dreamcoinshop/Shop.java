@@ -152,9 +152,11 @@ final class Shop {
     }
 
     ItemStack sellwandItem(Player viewer, String display, double multiplier, int uses) {
-        ItemStack item = new ItemStack(Material.BLAZE_ROD);
+        Material material = Material.matchMaterial(plugin.config().sellwandMaterial);
+        ItemStack item = new ItemStack(material == null || !material.isItem() || material.isAir() ? Material.BLAZE_ROD : material);
         ItemMeta meta = item.getItemMeta();
-        Ph ph = Ph.of("multiplier", format(multiplier), "uses", uses).snippet("name", display);
+        if (plugin.config().sellwandGlint && Capabilities.GLINT) meta.setEnchantmentGlintOverride(true);
+        Ph ph = Ph.of("multiplier", format(multiplier), "uses", uses < 0 ? "∞" : String.valueOf(uses)).snippet("name", display);
         text().itemText(meta, viewer, text().raw("sellwand.item-name"), List.of(text().raw("sellwand.item-lore")), ph);
         meta.getPersistentDataContainer().set(WAND_MULTIPLIER, PersistentDataType.DOUBLE, multiplier);
         meta.getPersistentDataContainer().set(WAND_USES, PersistentDataType.INTEGER, uses);
@@ -183,10 +185,11 @@ final class Shop {
             plugin.sounds().play(player, "purchase-fail");
             return;
         }
-        String command = plugin.config().spawnerWandCommand
-                .replace("%player%", player.getName())
-                .replace("%multiplier%", format(wand.multiplier()) + "x");
-        runCommands(List.of(command), ok -> {
+        List<String> raw = wand.commands().isEmpty() ? List.of(plugin.config().spawnerWandCommand) : wand.commands();
+        List<String> commands = raw.stream().map(c -> c.replace("%player%", player.getName())
+                .replace("%multiplier%", format(wand.multiplier()) + "x").replace("%multiplier_number%", format(wand.multiplier()))
+                .replace("%uses%", String.valueOf(wand.uses()))).toList();
+        runCommands(commands, ok -> {
             if (ok == null || ok) {
                 log(player, "spawner sellwand " + key, price, Currency.COINS);
                 text().send(player, "shop.purchased-wand", Ph.of("item", Text.plain(wand.display())));

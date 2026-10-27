@@ -1,9 +1,31 @@
-# ════════════════════════════════════════════════════════════
-#   Dreamcoinshop  ·  config.yml
-#   Most of this can also be changed in-game: /coinshop settings
-#   After editing this file, run /coinshop reload.
-# ════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════════
+#
+#        ____                            ______      _            __
+#       / __ \________  ____ _____ ___  / ____/___  (_)___  _____/ /_  ____  ____
+#      / / / / ___/ _ \/ __ `/ __ `__ \/ /   / __ \/ / __ \/ ___/ __ \/ __ \/ __ \
+#     / /_/ / /  /  __/ /_/ / / / / / / /___/ /_/ / / / / (__  ) / / / /_/ / /_/ /
+#    /_____/_/   \___/\__,_/_/ /_/ /_/\____/\____/_/_/ /_/____/_/ /_/\____/ .___/
+#                                                                        /_/
+#
+#    DreamCoinshop 2.0  ·  config.yml
+#    Cosmetics shop · Country flags · Particles · Perks · Sellwands · Shards · Sales
+#
+#    Author ....... BasuGamer56 (DreamBasu)
+#    Website ...... https://dreamscube.fun
+#    Support ...... the BuiltByBit resource page (Discussion tab)
+#
+#    • Almost everything here can also be changed in-game:  /coinshop settings
+#    • After editing this file by hand, run                  /coinshop reload
+#    • Every text and colour is in messages.yml, every sound in sounds.yml
+#
+#    In this file, top to bottom:
+#      License · Currencies · Menus · Chest layout · Shop sections · Buying
+#      Chat & names · Flags · Particles · Perks · Store · Shards · Sales · Pay
+#      Leaderboards · Sellwands · Storage (databases & cross-server sync) · Shop items
+#
+# ════════════════════════════════════════════════════════════════════════════════
 
+# ─────────────────────────────── license ───────────────────────────────
 # Manage your license at https://dreamscube.fun
 # Filled in automatically on first start if you downloaded Dreamcoinshop from
 # BuiltByBit. Paste your key here if it's empty.
@@ -23,15 +45,16 @@ currencies:
     name-singular: ""
     # Extra command names for /coin (e.g. [gem, gems]). Needs a restart.
     commands: []
+  # The second currency (earned by playing, spent in its own shop). Its commands are
+  # /orb and /orbshop, plus the names below.
   orbs:
-    name: "Orbs"
+    name: "Shards"
     name-singular: ""
-    # Name of its shop on the menus. Empty = automatic: "Orbshop", or "Shard Shop"
-    # after renaming Orbs to Shards (name-singular + " Shop").
+    # Name of its shop on the menus. Empty = automatic: name-singular + " Shop" ("Shard Shop").
     shop-name: ""
-    # Extra command names for /orb and /orbshop (e.g. [shard, shards] and [shardshop]). Needs a restart.
-    commands: []
-    shop-commands: []
+    # Extra command names for /orb and /orbshop. Needs a restart.
+    commands: [shard, shards]
+    shop-commands: [shardshop]
 
 # ─────────────────────────────── menus ───────────────────────────────
 menu:
@@ -62,8 +85,8 @@ menu:
     spawnerwands: "<gold><bold>Spawner Sellwands"
     buycoins: "<gold><bold>Buy <coins_name>"
     topcoins: "<gold><bold>Top <coins_name>"
-    orbshop: "<light_purple><bold><orbshop_name>"
-    orbstop: "<light_purple><bold><orbs_name> Top"
+    orbshop: "<#3B82F6><bold><orbshop_name>"
+    orbstop: "<#3B82F6><bold><orbs_name> Top"
     settings: "<red><bold>Coinshop Settings"
   # Descriptions of the buttons on the main menu.
   descriptions:
@@ -78,7 +101,7 @@ menu:
     spawnerwands: "Buy wands that instantly sell spawners at a bonus rate"
     buycoins: "Top up your <coins_name> balance with real money"
     topcoins: "See who has the most <coins_name> on the server"
-    orbshop: "Spend your <orbs_name> on spawners"
+    orbshop: "Spend your <orbs_name> on rare items"
     settings: "Change the shop settings and prices (admins)"
 
 # ─────────────────────────────── chest menu layout ───────────────────────────────
@@ -111,7 +134,7 @@ gui:
     spawnerwands: SPAWNER
     buycoins: GOLD_INGOT
     topcoins: DIAMOND
-    orbshop: ENDER_PEARL
+    orbshop: PRISMARINE_SHARD
     settings: COMPARATOR
   # Icons of the fixed buttons.
   buttons:
@@ -130,7 +153,8 @@ categories:
   gradients: true
   flags: true
   sellwands: true
-  spawnerwands: true
+  # Off until a spawner plugin is set up (see "Spawner Sellwands" at the bottom).
+  spawnerwands: false
   buycoins: true
   topcoins: true
   orbshop: true
@@ -208,16 +232,53 @@ particle-settings:
   # Keep showing particles while the player has invisibility.
   when-invisible: false
 
+# ─────────────────────────────── perks ───────────────────────────────
+perk-settings:
+  # DreamCoinshop has the perk commands built in (/craft, /anvil, /loom, /enderchest,
+  # /trash, /hat, /nick ...). false = only give the permissions (for another plugin's commands).
+  commands: true
+  # When another plugin (EssentialsX, CMI ...) has the same command: true = players who
+  # bought the perk use DreamCoinshop's, everyone else still gets the other plugin's.
+  # false = leave those commands to the other plugin.
+  take-over: true
+  nick:
+    min-length: 3
+    max-length: 16
+    # Players with this permission may colour their nickname (<red>, <#FF0000>, <gradient:...>).
+    colors-permission: "dreamcoinshop.nick.colors"
+
+# ─────────────────────────────── sellwands ───────────────────────────────
+sellwand-settings:
+  # Where the sell prices come from:
+  #   CONFIG     - sell-prices (in the Sellwands part at the bottom)
+  #   ESSENTIALS - EssentialsX's worth.yml if it's installed; sell-prices for anything not in it
+  price-source: CONFIG
+  # What the player gets for a sale:
+  #   COINS - DreamCoinshop Coins
+  #   VAULT - your server economy (EssentialsX, CMI ... through Vault). Coins if there's none.
+  payout: COINS
+  # The containers a wand works on. ALL = every container.
+  containers: [CHEST, TRAPPED_CHEST, BARREL, SHULKER_BOX]
+  # Only sell while sneaking (shift + right click), so opening a chest still works normally.
+  require-sneak: false
+  # Milliseconds between two uses.
+  cooldown-ms: 500
+  # The wand item, and whether it shines like an enchanted item.
+  item: BLAZE_ROD
+  glint: true
+
 # ─────────────────────────────── store ───────────────────────────────
 # Link of the "Visit Store" button in the Buy Coins menu.
-store-url: "https://store.taraashmc.fun"
+store-url: "https://store.example.com"
 
-# Console command run when a Spawner Sellwand is bought. %player% = buyer's name,
-# %multiplier% = the tier's multiplier written like "1.5x".
+# Console command run when a Spawner Sellwand is bought (when the tier has no commands of
+# its own). %player% = buyer, %multiplier% = like "1.5x". Needs a spawner plugin - see the
+# Spawner Sellwands section at the bottom.
 spawnerwand-give-command: "ds givewand %player% %multiplier%"
 
-# ─────────────────────────────── orbs ───────────────────────────────
-# A second currency every online player earns over time.
+# ─────────────────────────────── shards ───────────────────────────────
+# The second currency (named in currencies.orbs): every online player earns some over
+# time and spends it in the Shard Shop.
 orbs:
   payout:
     enabled: true
@@ -331,19 +392,29 @@ glows:
   blue:         { display: "Blue Glow",    color: "#5555FF", price: 1000, icon: BLUE_DYE }
   purple:       { display: "Purple Glow",  color: "#AA00AA", price: 1000, icon: PURPLE_DYE }
   white:        { display: "White Glow",   color: "#FFFFFF", price: 1000, icon: WHITE_DYE }
+  yellow:       { display: "Yellow Glow",  color: "#FFFF55", price: 1000, icon: YELLOW_DYE }
+  pink:         { display: "Pink Glow",    color: "#FF55FF", price: 1000, icon: PINK_DYE }
   rainbow:      { display: "Rainbow Glow", rainbow: true,    price: 1500, icon: FIREWORK_STAR }
 
 # ---------------- Perks ----------------
-# permission: the permission given while the player owns the perk. This plugin only gives the
-# permission - point it at whatever plugin provides the command (e.g. EssentialsX uses
-# "essentials.craft", "essentials.enderchest", ...).
+# Commands a player unlocks for good. DreamCoinshop runs them itself - no EssentialsX or
+# other plugin needed (see perk-settings above).
+#   action:      what it does: CRAFT, ANVIL, GRINDSTONE, SMITHING, LOOM, STONECUTTER,
+#                CARTOGRAPHY, ENDERCHEST, TRASH, HAT, NICK (NONE = only give the permission)
+#   permission:  given while the player owns the perk. A rank that has it can use the
+#                command without buying it. Point it at another plugin's permission if you
+#                want a perk for something DreamCoinshop doesn't do (with action: NONE).
 perks:
-  craft:         { display: "/craft",         permission: "dreamcoinshop.perk.craft",         price: 100, icon: CRAFTING_TABLE }
-  smithingtable: { display: "/smithingtable", permission: "dreamcoinshop.perk.smithingtable", price: 100, icon: SMITHING_TABLE }
-  grindstone:    { display: "/grindstone",    permission: "dreamcoinshop.perk.grindstone",    price: 100, icon: GRINDSTONE }
-  anvil:         { display: "/anvil",         permission: "dreamcoinshop.perk.anvil",         price: 100, icon: ANVIL }
-  enderchest:    { display: "/enderchest",    permission: "dreamcoinshop.perk.enderchest",    price: 100, icon: ENDER_EYE }
-  nick:          { display: "/nick",          permission: "dreamcoinshop.perk.nick",          price: 100, icon: NAME_TAG }
+  craft:         { display: "/craft",         action: CRAFT,       permission: "dreamcoinshop.perk.craft",         price: 100, icon: CRAFTING_TABLE }
+  enderchest:    { display: "/enderchest",    action: ENDERCHEST,  permission: "dreamcoinshop.perk.enderchest",    price: 150, icon: ENDER_EYE }
+  anvil:         { display: "/anvil",         action: ANVIL,       permission: "dreamcoinshop.perk.anvil",         price: 150, icon: ANVIL }
+  smithingtable: { display: "/smithingtable", action: SMITHING,    permission: "dreamcoinshop.perk.smithingtable", price: 100, icon: SMITHING_TABLE }
+  grindstone:    { display: "/grindstone",    action: GRINDSTONE,  permission: "dreamcoinshop.perk.grindstone",    price: 100, icon: GRINDSTONE }
+  stonecutter:   { display: "/stonecutter",   action: STONECUTTER, permission: "dreamcoinshop.perk.stonecutter",   price: 100, icon: STONECUTTER }
+  loom:          { display: "/loom",          action: LOOM,        permission: "dreamcoinshop.perk.loom",          price: 100, icon: LOOM }
+  trash:         { display: "/trash",         action: TRASH,       permission: "dreamcoinshop.perk.trash",         price: 50,  icon: CAULDRON }
+  hat:           { display: "/hat",           action: HAT,         permission: "dreamcoinshop.perk.hat",           price: 200, icon: LEATHER_HELMET }
+  nick:          { display: "/nick",          action: NICK,        permission: "dreamcoinshop.perk.nick",          price: 500, icon: NAME_TAG }
 
 # ---------------- Tags ----------------
 # text: how the tag looks (MiniMessage). Shown after the name in chat.
@@ -370,6 +441,10 @@ namegradients:
   candy:  { display: "Candy",  from: "#ff9a9e", to: "#fecfef", price: 1000, icon: PINK_DYE }
   gold:   { display: "Gold",   from: "#BF953F", to: "#FCF6BA", price: 1000, icon: GOLD_NUGGET }
   ice:    { display: "Ice",    from: "#83a4d4", to: "#b6fbff", price: 1000, icon: BLUE_ICE }
+  aurora: { display: "Aurora", from: "#00F260", to: "#0575E6", price: 1200, icon: PRISMARINE_CRYSTALS }
+  lava:   { display: "Lava",   from: "#FF416C", to: "#FF4B2B", price: 1200, icon: MAGMA_CREAM }
+  royal:  { display: "Royal",  from: "#8E2DE2", to: "#4A00E0", price: 1200, icon: AMETHYST_SHARD }
+  sakura: { display: "Sakura", from: "#FFAFBD", to: "#FFC3A0", price: 1200, icon: PINK_PETALS }
 
 # ---------------- Particles ----------------
 # effect: FLAME_TRAIL, SOUL_TRAIL, HEART_HALO, ANGEL_HALO, RAINBOW_RING, SNOW_CLOUD,
@@ -402,11 +477,14 @@ particles:
   sculk_souls:     { display: "<dark_aqua>Sculk Souls",    effect: SCULK_SOULS,     price: 2500, icon: SCULK }
 
 # ---------------- Sellwands ----------------
-# Right click a chest to sell it. multiplier is applied to sell-prices below.
+# Right click a chest (barrel, shulker...) with one to sell what's inside. Works on its own:
+# the prices are sell-prices below (or EssentialsX's worth.yml, see sellwand-settings).
+#   multiplier: the sell prices are multiplied by this     uses: how many times (-1 = forever)
 sellwands:
-  tier1: { display: "Sellwand I",   multiplier: 1.5, uses: 500,  price: 825 }
+  tier1: { display: "Sellwand I",   multiplier: 1.5, uses: 500,  price: 800 }
   tier2: { display: "Sellwand II",  multiplier: 2.0, uses: 750,  price: 1600 }
   tier3: { display: "Sellwand III", multiplier: 2.5, uses: 1000, price: 2600 }
+  tier4: { display: "Sellwand IV",  multiplier: 3.0, uses: 1500, price: 4000 }
 
 # Base sell price per item, used by Sellwands.
 sell-prices:
@@ -428,60 +506,107 @@ sell-prices:
   RAW_GOLD: 10
   RAW_COPPER: 2
   COPPER_INGOT: 3
+  OAK_LOG: 1
+  SPRUCE_LOG: 1
+  BIRCH_LOG: 1
+  WHEAT: 1
+  CARROT: 0.5
+  POTATO: 0.5
+  SUGAR_CANE: 1
+  PUMPKIN: 2
+  MELON_SLICE: 0.5
+  CACTUS: 1
+  BAMBOO: 0.2
+  KELP: 0.3
+  NETHER_WART: 1
+  COCOA_BEANS: 1
+  SPIDER_EYE: 1
+  ENDER_PEARL: 5
+  BLAZE_ROD: 6
+  SLIME_BALL: 3
+  GHAST_TEAR: 10
+  PHANTOM_MEMBRANE: 4
+  IRON_BLOCK: 72
+  GOLD_BLOCK: 108
+  DIAMOND_BLOCK: 360
+  EMERALD_BLOCK: 315
+  QUARTZ: 2
+  AMETHYST_SHARD: 2
 
 # ---------------- Spawner Sellwands ----------------
-# Bought here, given by spawnerwand-give-command (your spawner plugin). uses is only shown.
+# A spawner sellwand sells what a spawner plugin stored in its spawners - so it needs a
+# spawner plugin that has its own sell wand (DreamSpawners, or any other). DreamCoinshop
+# sells it and runs that plugin's command to give it. That's why this section is off by
+# default (categories.spawnerwands): turn it on once your spawner plugin is set.
+#   commands: the console commands that give the wand (empty = spawnerwand-give-command).
+#     %player% buyer · %multiplier% "2.5x" · %multiplier_number% "2.5" · %uses%
+#   Example for DreamSpawners:  commands: ["ds givewand %player% %multiplier%"]
 spawnerwands:
-  tier1: { display: "Spawner Sellwand I",   multiplier: 1.5,  uses: 500,  price: 1200 }
-  tier2: { display: "Spawner Sellwand II",  multiplier: 1.75, uses: 750,  price: 2000 }
-  tier3: { display: "Spawner Sellwand III", multiplier: 2.0,  uses: 1000, price: 3000 }
+  tier1: { display: "Spawner Sellwand I",   multiplier: 1.5, uses: 500,  price: 1200 }
+  tier2: { display: "Spawner Sellwand II",  multiplier: 2.0, uses: 750,  price: 2000 }
+  tier3: { display: "Spawner Sellwand III", multiplier: 2.5, uses: 1000, price: 3000 }
+  tier4: { display: "Spawner Sellwand IV",  multiplier: 3.0, uses: 1500, price: 4500 }
 
 # ---------------- Buy Coins (real money) ----------------
 # Only shown as information; the "Visit Store" button links to store-url. Your store
 # credits the coins, e.g. with "/coin give <player> <amount>".
 buycoins:
-  tier1: { price-label: "₹100", coins: 500 }
-  tier2: { price-label: "₹200", coins: 1100 }
-  tier3: { price-label: "₹300", coins: 1800 }
-  tier4: { price-label: "₹400", coins: 2600 }
-  tier5: { price-label: "₹500", coins: 3500 }
+  tier1: { price-label: "$2.99",  coins: 500 }
+  tier2: { price-label: "$4.99",  coins: 1000 }
+  tier3: { price-label: "$9.99",  coins: 2500 }
+  tier4: { price-label: "$19.99", coins: 5500 }
+  tier5: { price-label: "$49.99", coins: 15000 }
 
-# ---------------- Orbshop (spend Orbs) ----------------
-# commands run from the console on purchase, %player% = buyer's name.
+# ---------------- Shard Shop (spend Shards) ----------------
+# commands: run by the console when bought, %player% = the buyer. Anything works: vanilla
+# /give, a crate key, a spawner from your spawner plugin, a rank...
+#   e.g. a crate key:  commands: ["crates key give %player% vote 1"]
 orbshop:
-  allay:
-    display: "Allay Spawner"
+  diamonds:
+    display: "8 Diamonds"
+    price: 40
+    icon: DIAMOND
+    commands:
+      - "give %player% diamond 8"
+  golden_apples:
+    display: "2 Enchanted Golden Apples"
+    price: 80
+    icon: ENCHANTED_GOLDEN_APPLE
+    commands:
+      - "give %player% enchanted_golden_apple 2"
+  totem:
+    display: "Totem of Undying"
+    price: 100
+    icon: TOTEM_OF_UNDYING
+    commands:
+      - "give %player% totem_of_undying 1"
+  experience:
+    display: "30 Levels of XP"
+    price: 60
+    icon: EXPERIENCE_BOTTLE
+    commands:
+      - "xp add %player% 30 levels"
+  netherite:
+    display: "Netherite Ingot"
     price: 150
-    icon: SPAWNER
+    icon: NETHERITE_INGOT
     commands:
-      - "ds give %player% ALLAY"
-  enderman:
-    display: "Enderman Spawner"
+      - "give %player% netherite_ingot 1"
+  shulker:
+    display: "Shulker Box"
+    price: 120
+    icon: SHULKER_BOX
+    commands:
+      - "give %player% shulker_box 1"
+  elytra:
+    display: "Elytra"
     price: 300
-    icon: SPAWNER
+    icon: ELYTRA
     commands:
-      - "ds give %player% ENDERMAN"
-  creeper:
-    display: "Creeper Spawner"
-    price: 450
-    icon: SPAWNER
+      - "give %player% elytra 1"
+  beacon:
+    display: "Beacon"
+    price: 400
+    icon: BEACON
     commands:
-      - "ds give %player% CREEPER"
-  turtle:
-    display: "Turtle Spawner"
-    price: 600
-    icon: SPAWNER
-    commands:
-      - "ds give %player% TURTLE"
-  breeze:
-    display: "Breeze Spawner"
-    price: 700
-    icon: SPAWNER
-    commands:
-      - "ds give %player% BREEZE"
-  evoker:
-    display: "Evoker Spawner"
-    price: 1000
-    icon: SPAWNER
-    commands:
-      - "ds give %player% EVOKER"
+      - "give %player% beacon 1"

@@ -45,7 +45,7 @@ final class Pages {
             Map.entry("chatcolors", "NAME_TAG"), Map.entry("glows", "GLOWSTONE_DUST"), Map.entry("perks", "NETHER_STAR"),
             Map.entry("tags", "PAPER"), Map.entry("gradients", "FIREWORK_STAR"), Map.entry("flags", "WHITE_BANNER"),
             Map.entry("sellwands", "BLAZE_ROD"), Map.entry("spawnerwands", "SPAWNER"), Map.entry("buycoins", "GOLD_INGOT"),
-            Map.entry("topcoins", "DIAMOND"), Map.entry("orbshop", "ENDER_PEARL"), Map.entry("settings", "COMPARATOR"),
+            Map.entry("topcoins", "DIAMOND"), Map.entry("orbshop", "PRISMARINE_SHARD"), Map.entry("settings", "COMPARATOR"),
             Map.entry("particles", "BLAZE_POWDER"));
 
     /** Items per page of a chest menu (4 rows of 7). */
@@ -227,6 +227,7 @@ final class Pages {
             case TAG -> "PAPER";
             case FLAG -> "WHITE_BANNER";
             case PARTICLE -> "BLAZE_POWDER";
+            case NICK -> "NAME_TAG";
         };
     }
 
@@ -313,8 +314,8 @@ final class Pages {
         List<ShopConfig.Wand> list = new ArrayList<>(wands.values());
         for (ShopConfig.Wand wand : paginate(m, view, list, dialog ? 40 : CHEST_PAGE)) {
             String extra = spawner ? msg("menu.spawnerwand", "multiplier", Shop.format(wand.multiplier()))
-                    : msg("menu.wand", "multiplier", Shop.format(wand.multiplier()), "uses", wand.uses());
-            String label = (spawner ? "<light_purple>" : "<gold>") + wand.display() + " " + extra;
+                    : msg("menu.wand", "multiplier", Shop.format(wand.multiplier()), "uses", wand.uses() < 0 ? "∞" : String.valueOf(wand.uses()));
+            String label = (spawner ? "<aqua>" : "<gold>") + wand.display() + " " + extra;
             m.add(new Menu.Button(Menu.Icon.of(spawner ? "SPAWNER" : "BLAZE_ROD"), label,
                     priceStatus(section, wand.price(), false),
                     msg(spawner ? "menu.tooltip.spawnerwand" : "menu.tooltip.sellwand"), List.of(), false, 260, (p, c, in) -> {
@@ -348,9 +349,9 @@ final class Pages {
         boolean orbs = currency == Currency.ORBS;
         boolean full = "full".equals(view.arg());
         String id = orbs ? "orbstop" : "topcoins";
-        Menu m = new Menu(orbs ? cfg().title("orbstop", "<light_purple><bold>Orbs Top") : cfg().title("topcoins", "<gold><bold>Top Coins"));
+        Menu m = new Menu(orbs ? cfg().title("orbstop", "<color:#3B82F6><bold><orbs_name> Top") : cfg().title("topcoins", "<gold><bold>Top Coins"));
         m.back = back(full ? View.of(id) : View.of(orbs ? "orbshop" : "main"));
-        m.infoIcon = Menu.Icon.of(orbs ? "ENDER_PEARL" : "DIAMOND");
+        m.infoIcon = Menu.Icon.of(orbs ? "PRISMARINE_SHARD" : "DIAMOND");
         DataManager data = plugin.data();
         int size = full ? cfg().topFullSize : cfg().topSize;
         data.refreshTop(currency, cfg().topFullSize, () -> menus.refreshIfViewing(player, id));
@@ -415,14 +416,14 @@ final class Pages {
     // ------------------------------------------------------------------ orbshop
 
     private Menu orbShop(Profile profile, View view, boolean dialog) {
-        Menu m = new Menu(cfg().title("orbshop", "<light_purple><bold>Orbshop"));
+        Menu m = new Menu(cfg().title("orbshop", "<color:#3B82F6><bold><orbshop_name>"));
         m.back = back(View.of("main"));
-        m.infoIcon = Menu.Icon.of("ENDER_PEARL");
+        m.infoIcon = Menu.Icon.of("PRISMARINE_SHARD");
         m.body(profile.isLoaded() ? msg("menu.orbs-balance", "orbs", Shop.format(Math.floor(profile.balance(Currency.ORBS)))) : msg("menu.loading"));
         saleLine(m, "orbshop");
         List<ShopConfig.OrbItem> items = new ArrayList<>(cfg().orbItems.values());
         for (ShopConfig.OrbItem item : paginate(m, view, items, dialog ? 40 : CHEST_PAGE)) {
-            m.add(new Menu.Button(Menu.Icon.of(item.icon()), "<light_purple>" + item.display(),
+            m.add(new Menu.Button(Menu.Icon.of(item.icon()), "<color:#60A5FA>" + item.display(),
                     priceStatus("orbshop", item.price(), true), msg("menu.tooltip.buy"), List.of(), false, 220,
                     (p, c, in) -> {
                         plugin.shop().buyOrbItem(p, item.key());

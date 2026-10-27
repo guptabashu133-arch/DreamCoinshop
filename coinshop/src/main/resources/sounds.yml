@@ -1,15 +1,23 @@
-# ================================================
-#   Dreamcoinshop - sounds.yml
-#   The sound played for each action.
+# ════════════════════════════════════════════════════════════════════════════════
 #
-#   sound  = a sound name, e.g. ENTITY_PLAYER_LEVELUP ("" or NONE = no sound)
-#   volume = 0.0 - 1.0+ (1.0 is normal volume)
-#   pitch  = 0.5 - 2.0 (1.0 is normal pitch)
+#        ____                            ______      _            __
+#       / __ \________  ____ _____ ___  / ____/___  (_)___  _____/ /_  ____  ____
+#      / / / / ___/ _ \/ __ `/ __ `__ \/ /   / __ \/ / __ \/ ___/ __ \/ __ \/ __ \
+#     / /_/ / /  /  __/ /_/ / / / / / / /___/ /_/ / / / / (__  ) / / / /_/ / /_/ /
+#    /_____/_/   \___/\__,_/_/ /_/ /_/\____/\____/_/_/ /_/____/_/ /_/\____/ .___/
+#                                                                        /_/
 #
-#   There are deliberately NO sounds for plain menu clicks (opening a menu,
-#   Back): Minecraft already plays its own click for every dialog button, and a
-#   second one sounds like a double click.
-# ================================================
+#    DreamCoinshop 2.0  ·  sounds.yml
+#
+#    The sound played for each action.
+#      sound   a sound name, e.g. ENTITY_PLAYER_LEVELUP ("" or NONE = no sound)
+#      volume  0.0 - 1.0+ (1.0 is normal)
+#      pitch   0.5 - 2.0 (1.0 is normal)
+#
+#    There are no sounds for plain menu clicks on purpose: Minecraft already clicks
+#    for every dialog button, and a second sound feels like a double click.
+#
+# ════════════════════════════════════════════════════════════════════════════════
 
 # Turn every sound of this plugin on or off (also in /coinshop settings).
 enabled: true

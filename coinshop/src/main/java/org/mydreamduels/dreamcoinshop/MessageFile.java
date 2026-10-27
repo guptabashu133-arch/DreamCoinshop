@@ -29,7 +29,13 @@ final class MessageFile {
             java.nio.file.Files.copy(file.toPath(), new File(plugin.getDataFolder(), "messages-v1-backup.yml").toPath(),
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             for (String key : yaml.getKeys(true)) {
-                if (yaml.isString(key)) yaml.set(key, currencyWords(yaml.getString(key)));
+                if (!yaml.isString(key)) continue;
+                String v = currencyWords(yaml.getString(key));
+                // the second currency is blue now (it was purple)
+                if (v.contains("<orbs_") || v.contains("<orb_name>") || v.contains("<orbshop_name>")) {
+                    v = v.replace("<light_purple>", "<color:#3B82F6>").replace("</light_purple>", "</color>");
+                }
+                yaml.set(key, v);
             }
             yaml.set("messages-version", MESSAGES_VERSION);
             yaml.save(file);

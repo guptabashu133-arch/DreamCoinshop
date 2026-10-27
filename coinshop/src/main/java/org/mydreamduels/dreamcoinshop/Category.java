@@ -10,7 +10,9 @@ enum Category {
     TAG("tag", true, "tags"),
     GRADIENT("gradient", true, "gradients"),
     FLAG("flag", true, "flags"),
-    PARTICLE("particle", true, "particles");
+    PARTICLE("particle", true, "particles"),
+    /** Not sold: the nickname set with the /nick perk (kept like an equipped item, so it syncs). */
+    NICK("nick", true, "perks");
 
     final String id;
     /** Equippable: one of them can be "active" at a time. Perks are just owned. */

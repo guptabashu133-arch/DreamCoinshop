@@ -42,7 +42,7 @@ final class Settings {
             toggle("cat-spawnerwands", "categories.spawnerwands", "SPAWNER"),
             toggle("cat-buycoins", "categories.buycoins", "GOLD_INGOT"),
             toggle("cat-topcoins", "categories.topcoins", "DIAMOND"),
-            toggle("cat-orbshop", "categories.orbshop", "ENDER_PEARL"),
+            toggle("cat-orbshop", "categories.orbshop", "PRISMARINE_SHARD"),
             toggle("equip-on-purchase", "shop.equip-on-purchase", "ARMOR_STAND"),
             toggle("log-purchases", "shop.log-purchases", "WRITABLE_BOOK"),
             toggle("show-balance", "menu.show-balance", "GOLD_NUGGET"),
@@ -59,14 +59,16 @@ final class Settings {
             toggle("sale-broadcast", "sale.broadcast", "BELL"),
             toggle("sale-old-price", "sale.show-old-price", "PAPER"),
             toggle("pay-coins", "pay.coins.enabled", "GOLD_NUGGET"),
+            toggle("sell-sneak", "sellwand-settings.require-sneak", "BLAZE_ROD"),
+            toggle("sell-glint", "sellwand-settings.glint", "BLAZE_ROD"),
             toggle("pay-orbs", "pay.orbs.enabled", "AMETHYST_SHARD"),
-            toggle("orbs-payout", "orbs.payout.enabled", "ENDER_PEARL"),
+            toggle("orbs-payout", "orbs.payout.enabled", "PRISMARINE_SHARD"),
             toggle("orbs-message", "orbs.payout.message", "BELL"));
 
     static final List<Def> VALUES = List.of(
             number("flag-price", "flags.price", "WHITE_BANNER", 0, 10_000_000, 100),
             number("orb-interval", "orbs.payout.interval-minutes", "CLOCK", 1, 1440, 1),
-            number("orb-amount", "orbs.payout.amount", "ENDER_PEARL", 0, 100_000, 0.5),
+            number("orb-amount", "orbs.payout.amount", "PRISMARINE_SHARD", 0, 100_000, 0.5),
             number("rotate-seconds", "flags.rotate.seconds", "COMPASS", 1, 60, 1),
             number("top-size", "top.size", "DIAMOND", 1, 45, 1),
             number("top-full-size", "top.full-size", "BOOK", 10, 100, 5),
@@ -80,6 +82,9 @@ final class Settings {
             choice("menu-style", "menu.style", "CHEST", List.of("AUTO", "DIALOG", "GUI")),
             choice("bedrock-style", "menu.bedrock-style", "CHEST", List.of("GUI", "DIALOG")),
             choice("flags-bedrock", "flags.bedrock", "WHITE_BANNER", List.of("TEXT", "GLYPH", "HIDE")),
+            choice("sell-prices", "sellwand-settings.price-source", "EMERALD", List.of("CONFIG", "ESSENTIALS")),
+            choice("sell-payout", "sellwand-settings.payout", "GOLD_INGOT", List.of("COINS", "VAULT")),
+            number("sell-cooldown", "sellwand-settings.cooldown-ms", "CLOCK", 0, 10_000, 100),
             new Def("store-url", Kind.TEXT, "store-url", "GOLD_INGOT", 0, 0, 0, List.of()));
 
     /** Price editor sections: id, config path, currency label. */
@@ -95,7 +100,7 @@ final class Settings {
             new PriceSection("particles", "particles", false, "BLAZE_POWDER"),
             new PriceSection("sellwands", "sellwands", false, "BLAZE_ROD"),
             new PriceSection("spawnerwands", "spawnerwands", false, "SPAWNER"),
-            new PriceSection("orbshop", "orbshop", true, "ENDER_PEARL"));
+            new PriceSection("orbshop", "orbshop", true, "PRISMARINE_SHARD"));
 
     private static Def toggle(String id, String path, String icon) {
         return new Def(id, Kind.TOGGLE, path, icon, 0, 1, 1, List.of());
@@ -152,6 +157,11 @@ final class Settings {
             case "sale-broadcast" -> c.saleBroadcast;
             case "sale-old-price" -> c.saleShowOldPrice;
             case "pay-coins" -> c.payCoins.enabled();
+            case "sell-sneak" -> c.sellRequireSneak;
+            case "sell-glint" -> c.sellwandGlint;
+            case "sell-prices" -> c.sellPriceSource.name();
+            case "sell-payout" -> c.sellPayout.name();
+            case "sell-cooldown" -> (double) c.sellCooldownMs;
             case "pay-orbs" -> c.payOrbs.enabled();
             case "particle-interval" -> (double) c.particlesIntervalTicks;
             case "pay-tax" -> c.payCoins.taxPercent();

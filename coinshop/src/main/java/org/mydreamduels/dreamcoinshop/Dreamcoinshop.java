@@ -94,6 +94,9 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         CommandAliases.register(this, "coin", cfg.coinCommands);
         CommandAliases.register(this, "orb", cfg.orbCommands);
         CommandAliases.register(this, "orbshop", cfg.orbshopCommands);
+        PerkCommands perkCommands = new PerkCommands(this);
+        getServer().getPluginManager().registerEvents(perkCommands, this);
+        perkCommands.register();
 
         startOrbTimer();
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {

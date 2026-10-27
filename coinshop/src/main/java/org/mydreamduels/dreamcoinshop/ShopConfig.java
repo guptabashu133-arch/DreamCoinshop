@@ -36,7 +36,8 @@ final class ShopConfig {
         }
     }
 
-    record Wand(String key, String display, double multiplier, int uses, double price) {
+    /** commands: spawner wands only - how the spawner plugin gives it (empty = spawnerwand-give-command). */
+    record Wand(String key, String display, double multiplier, int uses, double price, List<String> commands) {
     }
 
     record BuyTier(String key, String priceLabel, long coins) {
@@ -117,6 +118,26 @@ final class ShopConfig {
     int orbIntervalMinutes = 5;
     double orbAmount = 1;
     boolean orbMessage = true;
+
+    // perks
+    boolean perkCommands = true;
+    boolean perkTakeOver = true;
+    int nickMinLength = 3;
+    int nickMaxLength = 16;
+    String nickColorsPermission = "dreamcoinshop.nick.colors";
+
+    // sellwands
+    enum PriceSource { CONFIG, ESSENTIALS }
+    enum Payout { COINS, VAULT }
+    PriceSource sellPriceSource = PriceSource.CONFIG;
+    Payout sellPayout = Payout.COINS;
+    List<String> sellContainers = List.of("ALL");
+    boolean sellRequireSneak = false;
+    int sellCooldownMs = 500;
+    String sellwandMaterial = "BLAZE_ROD";
+    boolean sellwandGlint = true;
+    /** Prices from EssentialsX's worth.yml (price-source: ESSENTIALS), by material name. */
+    final Map<String, Double> essentialsWorth = new LinkedHashMap<>();
 
     boolean particlesEnabled = true;
     boolean particlesVisibleToOthers = true;
@@ -252,6 +273,24 @@ final class ShopConfig {
         orbAmount = Math.max(0, cfg.getDouble("orbs.payout.amount", 1));
         orbMessage = cfg.getBoolean("orbs.payout.message", true);
 
+        perkCommands = cfg.getBoolean("perk-settings.commands", true);
+        perkTakeOver = cfg.getBoolean("perk-settings.take-over", true);
+        nickMinLength = clamp(cfg.getInt("perk-settings.nick.min-length", 3), 1, 16);
+        nickMaxLength = clamp(cfg.getInt("perk-settings.nick.max-length", 16), nickMinLength, 32);
+        nickColorsPermission = cfg.getString("perk-settings.nick.colors-permission", "dreamcoinshop.nick.colors");
+
+        sellPriceSource = enumOr(PriceSource.class, cfg.getString("sellwand-settings.price-source"), PriceSource.CONFIG);
+        sellPayout = enumOr(Payout.class, cfg.getString("sellwand-settings.payout"), Payout.COINS);
+        List<String> containers = new ArrayList<>();
+        for (String c : cfg.getStringList("sellwand-settings.containers")) containers.add(c.trim().toUpperCase(Locale.ROOT));
+        sellContainers = containers.isEmpty() ? List.of("ALL") : List.copyOf(containers);
+        sellRequireSneak = cfg.getBoolean("sellwand-settings.require-sneak", false);
+        sellCooldownMs = clamp(cfg.getInt("sellwand-settings.cooldown-ms", 500), 0, 60_000);
+        sellwandMaterial = cfg.getString("sellwand-settings.item", "BLAZE_ROD");
+        sellwandGlint = cfg.getBoolean("sellwand-settings.glint", true);
+        essentialsWorth.clear();
+        if (sellPriceSource == PriceSource.ESSENTIALS) readWorth(new File(plugin.getDataFolder().getParentFile(), "Essentials/worth.yml"), plugin);
+
         particlesEnabled = sections.getOrDefault("particles", true);
         particlesVisibleToOthers = cfg.getBoolean("particle-settings.visible-to-others", true);
         particlesIntervalTicks = clamp(cfg.getInt("particle-settings.interval-ticks", 2), 1, 40);
@@ -330,7 +369,7 @@ final class ShopConfig {
                 map.put(key, new Item(category, key, s.getString("display", key), Math.max(0, s.getDouble("price", defaultPrice)),
                         s.getString("icon", null), s.getString("color", null), gradient, s.getBoolean("rainbow", false),
                         s.getString("text", key), s.getString("permission", "dreamcoinshop.perk." + key),
-                        s.getString("effect", key.toUpperCase(Locale.ROOT))));
+                        s.getString("effect", s.getString("action", key.toUpperCase(Locale.ROOT)))));
             }
         }
         items.put(category, Collections.unmodifiableMap(map));
@@ -343,7 +382,8 @@ final class ShopConfig {
             ConfigurationSection s = sec.getConfigurationSection(key);
             if (s != null) {
                 into.put(key, new Wand(key, s.getString("display", key), s.getDouble("multiplier", 1.5),
-                        Math.max(1, s.getInt("uses", 500)), Math.max(0, s.getDouble("price", defaultPrice))));
+                        s.getInt("uses", 500) < 0 ? -1 : Math.max(1, s.getInt("uses", 500)), Math.max(0, s.getDouble("price", defaultPrice)),
+                        List.copyOf(s.getStringList("commands"))));
             }
         }
     }
@@ -424,8 +464,40 @@ final class ShopConfig {
         return names(descriptions.getOrDefault(key, fallback));
     }
 
+    /** What one of these sells for with a Sellwand (0 = not sellable). */
     double sellPrice(String material) {
-        return sellPrices.getOrDefault(material.toUpperCase(Locale.ROOT), 0.0);
+        String m = material.toUpperCase(Locale.ROOT);
+        if (sellPriceSource == PriceSource.ESSENTIALS) {
+            Double worth = essentialsWorth.get(m.replace("_", ""));
+            if (worth != null && worth > 0) return worth;
+        }
+        return sellPrices.getOrDefault(m, 0.0);
+    }
+
+    /** A wand works on this container (sellwand-settings.containers). */
+    boolean sellContainer(String blockType) {
+        String t = blockType.toUpperCase(Locale.ROOT);
+        for (String c : sellContainers) {
+            if (c.equals("ALL") || c.equals(t) || c.equals("SHULKER_BOX") && t.endsWith("SHULKER_BOX")) return true;
+        }
+        return false;
+    }
+
+    /** EssentialsX worth.yml: "worth: { diamond: 25, ironingot: 5, wool: { '0': 2 } }". Keys without "_". */
+    private void readWorth(File file, JavaPlugin plugin) {
+        if (!file.isFile()) {
+            plugin.getLogger().warning("sellwand-settings.price-source is ESSENTIALS, but " + file + " doesn't exist - using sell-prices.");
+            return;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection worth = yaml.getConfigurationSection("worth");
+        if (worth == null) return;
+        for (String key : worth.getKeys(false)) {
+            double v = worth.isConfigurationSection(key)
+                    ? worth.getConfigurationSection(key).getDouble("0", worth.getConfigurationSection(key).getDouble("*", 0))
+                    : worth.getDouble(key, 0);
+            if (v > 0) essentialsWorth.put(key.toUpperCase(Locale.ROOT).replace("_", ""), v);
+        }
     }
 
     // ------------------------------------------------------------------ upgrade from version 1
@@ -517,14 +589,16 @@ final class ShopConfig {
     private static final Map<String, String> RENAMED_DEFAULTS = Map.of(
             "\"<gold><bold>Buy Coins\"", "\"<gold><bold>Buy <coins_name>\"",
             "\"<gold><bold>Top Coins\"", "\"<gold><bold>Top <coins_name>\"",
-            "\"<light_purple><bold>Orbshop\"", "\"<light_purple><bold><orbshop_name>\"",
-            "\"<light_purple><bold>Orbs Top\"", "\"<light_purple><bold><orbs_name> Top\"",
+            "\"<light_purple><bold>Orbshop\"", "\"<#3B82F6><bold><orbshop_name>\"",
+            "\"<light_purple><bold>Orbs Top\"", "\"<#3B82F6><bold><orbs_name> Top\"",
             "\"Top up your Coins balance with real money\"", "\"Top up your <coins_name> balance with real money\"",
             "\"See who has the most Coins on the server\"", "\"See who has the most <coins_name> on the server\"",
-            "\"Spend your Orbs on spawners\"", "\"Spend your <orbs_name> on spawners\"");
+            "\"Spend your Orbs on spawners\"", "\"Spend your <orbs_name> on spawners\"",
+            "    orbshop: ENDER_PEARL\n    settings: COMPARATOR", "    orbshop: PRISMARINE_SHARD\n    settings: COMPARATOR");
 
     /** Top-level sections added in version 3; copied into an older file with their comments. */
-    private static final List<String> NEW_IN_3 = List.of("gui", "sale", "pay", "particle-settings", "particles");
+    private static final List<String> NEW_IN_3 = List.of("gui", "sale", "pay", "perk-settings", "sellwand-settings",
+            "particle-settings", "particles");
 
     /**
      * Version 2 to 3: adds the new sections (currencies, sale, pay, particles - with their comments,

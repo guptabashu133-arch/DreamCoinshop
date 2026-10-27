@@ -25,7 +25,7 @@ final class Cosmetics {
             ChatColor.GREEN, ChatColor.AQUA, ChatColor.BLUE, ChatColor.LIGHT_PURPLE);
     private static final Map<String, ChatColor> GLOW_KEYS = Map.of("red", ChatColor.RED, "gold", ChatColor.GOLD,
             "green", ChatColor.GREEN, "aqua", ChatColor.AQUA, "blue", ChatColor.BLUE, "purple", ChatColor.DARK_PURPLE,
-            "white", ChatColor.WHITE);
+            "white", ChatColor.WHITE, "yellow", ChatColor.YELLOW, "pink", ChatColor.LIGHT_PURPLE);
     private static final String TEAM_PREFIX = "dcs_glow_";
 
     private final Dreamcoinshop plugin;
@@ -66,12 +66,25 @@ final class Cosmetics {
 
     // ------------------------------------------------------------------ names
 
-    /** The player's real name in their gradient, as MiniMessage. Never their nickname. */
+    /**
+     * The player's name in their gradient, as MiniMessage: their /nick nickname if they set one
+     * (a coloured nickname keeps its own colours), never another plugin's nickname.
+     */
     String nameMini(Player player, Profile profile) {
-        String name = Text.escape(player.getName());
+        String nick = nick(profile);
+        // A nickname with its own colours (tags left after unescaping) keeps them
+        if (nick != null && !Text.plain(nick).equals(nick.replace("\\<", "<").replace("\\\\", "\\"))) return nick;
+        String name = nick != null ? nick : Text.escape(player.getName());
         ShopConfig.Item g = active(profile, Category.GRADIENT, "gradients");
         if (g == null || !g.isGradient()) return name;
         return "<gradient:" + g.gradient().get(0) + ":" + g.gradient().get(1) + ">" + name + "</gradient>";
+    }
+
+    /** The /nick nickname (MiniMessage), or null. Only while the nick perk is still usable. */
+    String nick(Profile profile) {
+        if (profile == null || !plugin.config().section("perks")) return null;
+        String nick = profile.active(Category.NICK);
+        return nick == null || nick.isBlank() ? null : nick;
     }
 
     /** Equipped item of a category, or null if none / the section is off / it no longer exists. */
@@ -115,7 +128,7 @@ final class Cosmetics {
         Profile profile = plugin.data().online(player.getUniqueId());
         if (profile == null) return;
         ShopConfig cfg = plugin.config();
-        boolean hasGradient = active(profile, Category.GRADIENT, "gradients") != null;
+        boolean hasGradient = active(profile, Category.GRADIENT, "gradients") != null || nick(profile) != null;
         if (hasGradient && (cfg.namesDisplay || cfg.namesTabList)) {
             named.add(player.getUniqueId());
             plugin.text().setNames(player, nameMini(player, profile), cfg.namesDisplay, cfg.namesTabList);

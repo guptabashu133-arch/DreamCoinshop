@@ -51,10 +51,13 @@ final class AdminPages {
             new Section("gradients", "namegradients", "FIREWORK_STAR", List.of(DISPLAY, PRICE, ICON, Field.text("from"), Field.text("to"))),
             new Section("particles", "particles", "BLAZE_POWDER", List.of(DISPLAY, PRICE, ICON,
                     new Field("effect", Kind.CHOICE, Arrays.stream(ParticleEffects.Style.values()).map(Enum::name).toList(), null))),
-            new Section("perks", "perks", "NETHER_STAR", List.of(DISPLAY, PRICE, ICON, Field.text("permission"))),
+            new Section("perks", "perks", "NETHER_STAR", List.of(DISPLAY, PRICE, ICON,
+                    new Field("action", Kind.CHOICE, Arrays.stream(PerkCommands.Action.values()).map(Enum::name).toList(), null),
+                    Field.text("permission"))),
             new Section("sellwands", "sellwands", "BLAZE_ROD", List.of(DISPLAY, PRICE, Field.number("multiplier"), Field.number("uses"))),
-            new Section("spawnerwands", "spawnerwands", "SPAWNER", List.of(DISPLAY, PRICE, Field.number("multiplier"))),
-            new Section("orbshop", "orbshop", "ENDER_PEARL", List.of(DISPLAY, PRICE, ICON, new Field("commands", Kind.LIST, List.of(), "|"))));
+            new Section("spawnerwands", "spawnerwands", "SPAWNER", List.of(DISPLAY, PRICE, Field.number("multiplier"),
+                    new Field("commands", Kind.LIST, List.of(), "|"))),
+            new Section("orbshop", "orbshop", "PRISMARINE_SHARD", List.of(DISPLAY, PRICE, ICON, new Field("commands", Kind.LIST, List.of(), "|"))));
 
     static Section section(String id) {
         for (Section s : SECTIONS) if (s.id().equals(id)) return s;
@@ -256,7 +259,10 @@ final class AdminPages {
                 out.put(path + ".to", "#AAAAAA");
             }
             case "particles" -> out.put(path + ".effect", ParticleEffects.Style.FLAME_TRAIL.name());
-            case "perks" -> out.put(path + ".permission", "dreamcoinshop.perk." + key);
+            case "perks" -> {
+                out.put(path + ".permission", "dreamcoinshop.perk." + key);
+                out.put(path + ".action", PerkCommands.Action.byKey(key).name());
+            }
             case "sellwands" -> {
                 out.put(path + ".multiplier", 1.5);
                 out.put(path + ".uses", 100L);

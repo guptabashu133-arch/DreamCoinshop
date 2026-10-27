@@ -2,7 +2,7 @@
 
 A cosmetics shop paid with **Coins**: chat colours, glows, tags, name gradients,
 **country flags**, **22 particle effects**, perks and sellwands, plus a second currency
-(**Orbs**) with its own shop. Dialog menus on Paper 1.21.6+, a chest menu everywhere else.
+(**Shards**) with its own shop. Works on its own: no other plugin needed. Dialog menus on Paper 1.21.6+, a chest menu everywhere else.
 Both currencies can be renamed (Orbs → Shards, Gems, Tokens...), the shop can go on sale,
 players can pay each other, and admins add or change items in-game.
 
@@ -27,11 +27,12 @@ Players on an older client through ViaVersion get the chest menu too.
 | `/coinshop settings` | `dreamcoinshop.settings` | change settings and prices in-game |
 | `/coinshop sale <percent> <time> [sections]`, `/coinshop sale stop` | `dreamcoinshop.admin` | put the shop on sale (e.g. `/coinshop sale 20 2h`, `/coinshop sale 50 1d tags flags`) |
 | `/coinshop reload` | `dreamcoinshop.admin` | reload config.yml, messages.yml, sounds.yml |
-| `/orbshop` | everyone | open the Orbshop |
+| `/orbshop` (`/shardshop`) | everyone | open the Shard Shop |
+| `/craft` `/anvil` `/grindstone` `/smithingtable` `/loom` `/stonecutter` `/enderchest` `/trash` `/hat` `/nick` | who bought the perk | the perk commands (built in) |
 | `/coin balance [player]` | everyone | Coins balance |
 | `/coin pay <player> <amount>` | `dreamcoinshop.pay` (everyone) | send Coins to another player (`pay:` tax, minimum, cooldown; Orbs pay is off by default) |
 | `/coin give/remove/set <player> <amount>`, `/coin giveall <amount>` | `dreamcoinshop.admin` | change Coins (works for offline players and players on other servers) |
-| `/orb ...` | same as `/coin` | the same for Orbs |
+| `/orb ...` (`/shard`) | same as `/coin` | the same for Shards |
 
 Permissions: `dreamcoinshop.use` and `dreamcoinshop.pay` (default: everyone),
 `dreamcoinshop.settings` and `dreamcoinshop.admin` (default: op).
@@ -40,6 +41,22 @@ Permissions: `dreamcoinshop.use` and `dreamcoinshop.pay` (default: everyone),
 
 `currencies:` in config.yml renames Coins and Orbs everywhere (messages, titles, buttons,
 settings). `currencies.orbs.commands: [shard]` adds `/shard` next to `/orb` (restart).
+
+## Perks
+
+10 perks with their commands built in - no EssentialsX needed: `/craft`, `/enderchest`,
+`/anvil`, `/smithingtable`, `/grindstone`, `/stonecutter`, `/loom`, `/trash`, `/hat`,
+`/nick` (colours with `dreamcoinshop.nick.colors`). If another plugin has the same command,
+players who bought the perk get DreamCoinshop's and everyone else keeps the other plugin's
+(`perk-settings.take-over`).
+
+## Sellwands
+
+Right click a chest, barrel or shulker box to sell it, 1.5x to 3x. Prices from `sell-prices`
+or EssentialsX's `worth.yml`; paid in Coins or the server's own money (Vault). Options:
+containers, sneak to sell, cooldown, wand item and shine, unlimited uses (`uses: -1`).
+Spawner Sellwands need a spawner plugin with its own wand: DreamCoinshop sells them and runs
+that plugin's command (`spawnerwands.*.commands`); off by default.
 
 ## Particles
 

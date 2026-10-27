@@ -56,12 +56,6 @@ final class DialogMenus implements Menus.Renderer, Listener {
     private static final Key BLOCKS = Key.key("minecraft", "blocks");
     private static final Key ITEMS = Key.key("minecraft", "items");
     /** Texture names that aren't just the material name. */
-    private static final Map<String, String> SPRITE_ALIASES = Map.of(
-            "crafting_table", "crafting_table_top", "smithing_table", "smithing_table_front",
-            "grindstone", "grindstone_side", "anvil", "anvil_top", "clock", "clock_00", "compass", "compass_00");
-    /** Blocks whose picture is their item texture. */
-    private static final java.util.Set<String> ITEM_TEXTURE_BLOCKS = java.util.Set.of("barrier", "bell", "lever", "comparator");
-
     private final Dreamcoinshop plugin;
     private final Platform platform;
     private final Menus menus;
@@ -205,14 +199,12 @@ final class DialogMenus implements Menus.Renderer, Listener {
         if (icon.material() == null) return null;
         Material m = Material.matchMaterial(icon.material());
         if (m == null) return null;
-        String name = m.name().toLowerCase(Locale.ROOT);
-        if (name.endsWith("_banner") || name.endsWith("_head") || name.endsWith("_skull") || name.equals("chest")) return null;
-        String texture = SPRITE_ALIASES.getOrDefault(name, name);
-        boolean block = m.isBlock() && !ITEM_TEXTURE_BLOCKS.contains(name);
-        boolean newAtlas = Capabilities.isAtLeast(1, 21, 11);
-        Key atlas = block || !newAtlas ? BLOCKS : ITEMS;
+        String path = Sprites.path(m.name());
+        if (path == null) return null; // heads, banners, chests...: no flat picture, the label stays without an icon
+        boolean block = path.startsWith("block/");
+        Key atlas = block || !Capabilities.isAtLeast(1, 21, 11) ? BLOCKS : ITEMS;
         try {
-            return ModernText.sprite(atlas, Key.key("minecraft", (block ? "block/" : "item/") + texture));
+            return ModernText.sprite(atlas, Key.key("minecraft", path));
         } catch (Exception e) {
             return null;
         }

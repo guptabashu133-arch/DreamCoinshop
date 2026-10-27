@@ -1,14 +1,26 @@
-# ================================================
-#   Dreamcoinshop - messages.yml
-#   Every message and menu text. MiniMessage formatting (<red>, <gradient:...>,
-#   <bold>, <#FF9933> ...). Placeholders look like <player> and are listed above
-#   each line. Leave a chat message empty ("") to not send it at all.
-#   New keys are added to this file automatically after an update.
-#   The currency names from config.yml (currencies:) work in every line:
-#   <coins_name> "Coins", <coins_lower> "coins", <coin_name> "Coin",
-#   <orbs_name> "Orbs", <orbs_lower> "orbs", <orb_name> "Orb", <orbshop_name> "Orbshop".
-#   <cmd> in a usage line is the command that was typed (coin, orb, or an alias).
-# ================================================
+# ════════════════════════════════════════════════════════════════════════════════
+#
+#        ____                            ______      _            __
+#       / __ \________  ____ _____ ___  / ____/___  (_)___  _____/ /_  ____  ____
+#      / / / / ___/ _ \/ __ `/ __ `__ \/ /   / __ \/ / __ \/ ___/ __ \/ __ \/ __ \
+#     / /_/ / /  /  __/ /_/ / / / / / / /___/ /_/ / / / / (__  ) / / / /_/ / /_/ /
+#    /_____/_/   \___/\__,_/_/ /_/ /_/\____/\____/_/_/ /_/____/_/ /_/\____/ .___/
+#                                                                        /_/
+#
+#    DreamCoinshop 2.0  ·  messages.yml
+#
+#    Every chat message and menu text. Formatting is MiniMessage: <red>, <bold>,
+#    <#FF9933>, <gradient:#FF0000:#0000FF> ...  (https://docs.advntr.dev/minimessage)
+#    • Placeholders look like <player>; the ones a line has are listed above it.
+#    • Leave a chat message empty ("") to not send it at all.
+#    • New lines are added to this file by themselves after an update.
+#    • The currency names from config.yml (currencies:) work in every line:
+#        <coins_name> Coins   <coins_lower> coins   <coin_name> Coin
+#        <orbs_name> Shards   <orbs_lower> shards   <orb_name> Shard   <orbshop_name> Shard Shop
+#    • <cmd> in a usage line is the command that was typed (coin, orb, shard ...).
+#    • After editing, run /coinshop reload.
+#
+# ════════════════════════════════════════════════════════════════════════════════
 
 # Used by the plugin to update this file. Don't change it.
 messages-version: 2
@@ -74,11 +86,32 @@ sellwand:
   no-uses: "<shadow:black><red>This sellwand is out of uses!</red></shadow>"
   nothing-sellable: "<shadow:black><yellow>Nothing sellable was found in that chest.</yellow></shadow>"
   # <amount>
-  sold: "<shadow:black><green>Sold chest contents for <gold><bold><amount> <coins_lower></bold></gold>!</green></shadow>"
+  # <amount>, <items> (how many items were sold)
+  sold: "<shadow:black><green>Sold <white><items></white> items for <gold><bold><amount> <coins_lower></bold></gold>!</green></shadow>"
+  # payout: VAULT - the server's own money
+  sold-money: "<shadow:black><green>Sold <white><items></white> items for <gold><bold>$<amount></bold></gold>!</green></shadow>"
   broke: "<shadow:black><red>Your sellwand broke!</red></shadow>"
   # The wand item. <name>, <multiplier>, <uses>
   item-name: "<gold><name>"
   item-lore: "<green>Multiplier: <multiplier>x\n<aqua>Uses left: <uses>\n<gray>Right click a chest to sell its contents!"
+
+# Perk commands (/craft, /anvil, /nick ...)
+perk:
+  # <perk>
+  not-owned: "<shadow:black><red>Unlock <white><perk></white> in <yellow>/coinshop</yellow> → Perks to use this.</red></shadow>"
+  unsupported: "<shadow:black><red>This server version can't open that menu.</red></shadow>"
+  trash-title: "<dark_gray><bold>Trash</bold> <gray>- everything here is deleted when you close it"
+  hat-empty: "<shadow:black><red>Hold the item you want to wear.</red></shadow>"
+  # <item>
+  hat-on: "<shadow:black><green>Enjoy your new hat: <white><item></white>!</green></shadow>"
+  nick-usage: "<shadow:black><red>Usage: <gray>/nick <name></gray> or <gray>/nick off</gray></red></shadow>"
+  # <min>, <max>
+  nick-bad: "<shadow:black><red>A nickname is <white><min>-<max></white> letters, numbers or _.</red></shadow>"
+  nick-too-fancy: "<shadow:black><red>That nickname has too many colours.</red></shadow>"
+  # <nick>
+  nick-taken: "<shadow:black><red><white><nick></white> is the name of a player who's online.</red></shadow>"
+  nick-set: "<shadow:black><green>Your nickname is now <white><nick></white>.</green></shadow>"
+  nick-off: "<shadow:black><green>Your nickname is gone; you're back to your real name.</green></shadow>"
 
 # /coin pay and /orb pay. <cmd> = the command typed, <currency> = coins / orbs (renamed ones too)
 pay:
@@ -165,6 +198,7 @@ editor:
     from: "Gradient from (#RRGGBB)"
     to: "Gradient to (#RRGGBB)"
     effect: "Particle effect"
+    action: "What the perk does"
     permission: "Permission it gives"
     multiplier: "Sell multiplier"
     uses: "Uses"
@@ -191,12 +225,12 @@ buycoins:
 # Orbs (second currency)
 orbs:
   # <amount>
-  received: "<shadow:black><white>You received <light_purple><bold><amount> <orbs_lower></bold></light_purple> playing this server!</white></shadow>"
-  balance-self: "<shadow:black><gray>Your <orbs_name> balance: <light_purple><bold><balance> <orbs_lower></bold></light_purple></gray></shadow>"
-  balance-other: "<shadow:black><gray><aqua><player></aqua>'s <orbs_name> balance: <light_purple><bold><balance> <orbs_lower></bold></light_purple></gray></shadow>"
+  received: "<shadow:black><white>You received <color:#3B82F6><bold><amount> <orbs_lower></bold></color> playing this server!</white></shadow>"
+  balance-self: "<shadow:black><gray>Your <orbs_name> balance: <color:#3B82F6><bold><balance> <orbs_lower></bold></color></gray></shadow>"
+  balance-other: "<shadow:black><gray><aqua><player></aqua>'s <orbs_name> balance: <color:#3B82F6><bold><balance> <orbs_lower></bold></color></gray></shadow>"
   not-enough-orbs: "<shadow:black><red>You don't have enough <orbs_lower> for that.</red></shadow>"
   # <item>, <price>
-  purchased: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow> for <light_purple><bold><price> <orbs_lower></bold></light_purple>!</green></shadow>"
+  purchased: "<shadow:black><green>Purchased <yellow><bold><item></bold></yellow> for <color:#3B82F6><bold><price> <orbs_lower></bold></color>!</green></shadow>"
 
 # /orb ... (mirrors /coin)
 orbcmd:
@@ -205,13 +239,13 @@ orbcmd:
   usage-giveall: "<shadow:black><red>Usage: <gray>/<cmd> giveall <amount></gray></red></shadow>"
   usage-remove: "<shadow:black><red>Usage: <gray>/<cmd> remove <player> <amount></gray></red></shadow>"
   usage-set: "<shadow:black><red>Usage: <gray>/<cmd> set <player> <amount></gray></red></shadow>"
-  gave: "<shadow:black><green>Gave <light_purple><bold><amount> <orbs_lower></bold></light_purple> to <aqua><player></aqua></green></shadow>"
-  received: "<shadow:black><white><light_purple><bold><amount> <orbs_lower></bold></light_purple> has been added to your account!</white></shadow>"
-  gave-all: "<shadow:black><green>Gave <light_purple><bold><amount> <orbs_lower></bold></light_purple> to every online player.</green></shadow>"
-  received-all: "<shadow:black><white>Added <light_purple><bold><amount> <orbs_lower></bold></light_purple> to All Online players.</white></shadow>"
-  removed: "<shadow:black><green>Removed <light_purple><bold><amount> <orbs_lower></bold></light_purple> from <aqua><player></aqua></green></shadow>"
-  set: "<shadow:black><green>Set <aqua><player></aqua>'s <orbs_name> balance to <light_purple><bold><amount> <orbs_lower></bold></light_purple></green></shadow>"
-  help-header: "<shadow:black><light_purple><bold>--- <orbs_name> Help ---</bold></light_purple></shadow>"
+  gave: "<shadow:black><green>Gave <color:#3B82F6><bold><amount> <orbs_lower></bold></color> to <aqua><player></aqua></green></shadow>"
+  received: "<shadow:black><white><color:#3B82F6><bold><amount> <orbs_lower></bold></color> has been added to your account!</white></shadow>"
+  gave-all: "<shadow:black><green>Gave <color:#3B82F6><bold><amount> <orbs_lower></bold></color> to every online player.</green></shadow>"
+  received-all: "<shadow:black><white>Added <color:#3B82F6><bold><amount> <orbs_lower></bold></color> to All Online players.</white></shadow>"
+  removed: "<shadow:black><green>Removed <color:#3B82F6><bold><amount> <orbs_lower></bold></color> from <aqua><player></aqua></green></shadow>"
+  set: "<shadow:black><green>Set <aqua><player></aqua>'s <orbs_name> balance to <color:#3B82F6><bold><amount> <orbs_lower></bold></color></green></shadow>"
+  help-header: "<shadow:black><color:#3B82F6><bold>--- <orbs_name> Help ---</bold></color></shadow>"
 
 # Settings menu (/coinshop settings)
 settings:
@@ -228,9 +262,9 @@ menu:
   # The sale banner on the main menu and shop pages. <percent>, <time>, <sections>
   sale-line: "<gold><bold>SALE</bold></gold> <red><bold>-<percent>%</bold></red> <yellow>on <sections></yellow> <gray>· ends in <time></gray>"
   # <coins>, <orbs>
-  balance: "<gray>Your balance: <gold><bold><coins> <coins_lower></bold></gold> <dark_gray>|</dark_gray> <light_purple><bold><orbs> <orbs_lower></bold></light_purple>"
+  balance: "<gray>Your balance: <gold><bold><coins> <coins_lower></bold></gold> <dark_gray>|</dark_gray> <color:#3B82F6><bold><orbs> <orbs_lower></bold></color>"
   # <orbs>
-  orbs-balance: "<gray>Your <orbs_name>: <light_purple><bold><orbs> <orbs_lower></bold></light_purple>"
+  orbs-balance: "<gray>Your <orbs_name>: <color:#3B82F6><bold><orbs> <orbs_lower></bold></color>"
   loading: "<yellow>Loading your data..."
   empty: "<gray>Nothing here yet."
   # <page>, <pages>
@@ -291,12 +325,12 @@ menu:
   # Shown after an item's name. <price>
   status:
     price: "<gray>[<gold><price> <coins_lower></gold>]"
-    price-orbs: "<gray>[<light_purple><price> <orbs_lower></light_purple>]"
+    price-orbs: "<gray>[<color:#3B82F6><price> <orbs_lower></color>]"
     # On sale: <price> (now), <old> (before), <percent>
     price-sale: "<gray>[<dark_gray><st><old></st></dark_gray> <gold><bold><price> <coins_lower></bold></gold> <red>-<percent>%</red>]"
-    price-sale-orbs: "<gray>[<dark_gray><st><old></st></dark_gray> <light_purple><bold><price> <orbs_lower></bold></light_purple> <red>-<percent>%</red>]"
+    price-sale-orbs: "<gray>[<dark_gray><st><old></st></dark_gray> <color:#3B82F6><bold><price> <orbs_lower></bold></color> <red>-<percent>%</red>]"
     price-sale-short: "<gray>[<gold><bold><price> <coins_lower></bold></gold> <red>-<percent>%</red>]"
-    price-sale-orbs-short: "<gray>[<light_purple><bold><price> <orbs_lower></bold></light_purple> <red>-<percent>%</red>]"
+    price-sale-orbs-short: "<gray>[<color:#3B82F6><bold><price> <orbs_lower></bold></color> <red>-<percent>%</red>]"
     owned: "<aqua>[Owned - click to equip]"
     active: "<green>[ACTIVE - click to disable]"
     perk-owned: "<green>- OWNED"
@@ -310,17 +344,17 @@ menu:
 
   # Top lists. <rank> (coloured #1, #2...), <player> (aqua for yourself), <amount>
   top-line: "<rank> <player> <dark_gray>-</dark_gray> <green><amount> <coins_lower>"
-  top-line-orbs: "<rank> <player> <dark_gray>-</dark_gray> <light_purple><amount> <orbs_lower>"
+  top-line-orbs: "<rank> <player> <dark_gray>-</dark_gray> <color:#3B82F6><amount> <orbs_lower>"
   # <amount>
   top-you: "<aqua>You: <green><amount> <coins_lower>"
-  top-you-orbs: "<aqua>You: <light_purple><amount> <orbs_lower>"
+  top-you-orbs: "<aqua>You: <color:#3B82F6><amount> <orbs_lower>"
   top-empty: "<gray>Nobody has any <coins_lower> yet!"
   top-empty-orbs: "<gray>Nobody has any <orbs_lower> yet!"
   top-loading: "<gray>Loading..."
   # One player in a top list: their head and flag are put in front. <rank>, <player>
   top-entry: "<rank> <player>"
   top-entry-coins: "<green><amount> <coins_lower>"
-  top-entry-orbs: "<light_purple><amount> <orbs_lower>"
+  top-entry-orbs: "<color:#3B82F6><amount> <orbs_lower>"
   # Hover text / item lore. <country> (or none)
   top-entry-flag: "<gray>Flag: <white><country>"
   top-entry-no-flag: "<gray>No flag yet"
@@ -328,7 +362,7 @@ menu:
   top-full-intro: "<gray>The top <size> players"
   # <rank>, <amount>
   top-you-rank-coins: "<aqua>You are <rank>: <green><amount> <coins_lower>"
-  top-you-rank-orbs: "<aqua>You are <rank>: <light_purple><amount> <orbs_lower>"
+  top-you-rank-orbs: "<aqua>You are <rank>: <color:#3B82F6><amount> <orbs_lower>"
   # Under the main menu: the flags coming up next on the Flags button (Java 1.21.9+)
   flags-next: "<gray>Next flags:"
 
@@ -381,6 +415,8 @@ menu:
     sale-old-price: "Show old price on sale"
     pay-coins: "/coin pay"
     pay-orbs: "/orb pay"
+    sell-sneak: "Sellwand only while sneaking"
+    sell-glint: "Sellwand shines"
     orbs-payout: "Give <orbs_name> over time"
     orbs-message: "<orbs_name> message"
     flag-price: "Flag price (<coins_lower>)"
@@ -396,6 +432,9 @@ menu:
     coins-name: "Name of Coins"
     orbs-name: "Name of Orbs"
     orbshop-name: "Name of the Orbshop"
+    sell-prices: "Sellwand prices from"
+    sell-payout: "Sellwand pays in"
+    sell-cooldown: "Sellwand cooldown (ms)"
     menu-style: "Menu style"
     bedrock-style: "Bedrock menu style"
     flags-bedrock: "Flags for Bedrock"
