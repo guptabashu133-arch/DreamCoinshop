@@ -179,11 +179,30 @@ final class ShopConfig {
             yaml.load(file);
         } catch (org.bukkit.configuration.InvalidConfigurationException e) {
             String why = e.getMessage() == null ? "" : e.getMessage().replaceAll("\\s+", " ");
-            throw new BrokenConfig(file.getName() + " has a mistake and can't be read: " + why);
+            throw new BrokenConfig(file.getName() + " has a mistake and can't be read: " + why + hint(file, why));
         } catch (IOException e) {
             throw new BrokenConfig("Could not read " + file.getName() + ": " + e.getMessage());
         }
         return yaml;
+    }
+
+    /**
+     * The line YAML complained about, plus the line before it (the mistake is often there:
+     * "key: value" where a section was expected, or a wrong number of spaces).
+     */
+    private static String hint(File file, String why) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("line (\\d+)").matcher(why);
+        int line = -1;
+        while (m.find()) line = Integer.parseInt(m.group(1));
+        if (line < 1) return "";
+        try {
+            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            StringBuilder sb = new StringBuilder(" | Look at these lines (check the spaces at the start, and that a section name like \"spawnerwands:\" has nothing after the colon):");
+            for (int i = Math.max(1, line - 1); i <= Math.min(lines.size(), line); i++) sb.append(" | ").append(i).append(": ").append(lines.get(i - 1));
+            return sb.toString();
+        } catch (IOException | RuntimeException e) {
+            return "";
+        }
     }
 
     /** Writes the bundled config.yml if needed, upgrades a version 1 file, and reads everything. */

@@ -154,6 +154,7 @@ categories:
   flags: true
   sellwands: true
   # Off until a spawner plugin is set up (see "Spawner Sellwands" at the bottom).
+  # To turn it on, change THIS line to true (or /coinshop settings -> Spawner Sellwands section).
   spawnerwands: false
   buycoins: true
   topcoins: true
@@ -541,6 +542,7 @@ sell-prices:
 #   commands: the console commands that give the wand (empty = spawnerwand-give-command).
 #     %player% buyer · %multiplier% "2.5x" · %multiplier_number% "2.5" · %uses%
 #   Example for DreamSpawners:  commands: ["ds givewand %player% %multiplier%"]
+# Turning the section on is done in "categories:" near the top - leave this line as it is.
 spawnerwands:
   tier1: { display: "Spawner Sellwand I",   multiplier: 1.5, uses: 500,  price: 1200 }
   tier2: { display: "Spawner Sellwand II",  multiplier: 2.0, uses: 750,  price: 2000 }
