@@ -334,6 +334,66 @@ top:
   # Shown for an empty place (#8 when only 7 players have coins) and an unranked player.
   placeholder-none: "---"
 
+# ─────────────────────────────── screens ───────────────────────────────
+# Clickable screens on walls (maps in invisible frames). Look at a wall and:
+#   /coinscreen place shop         every shop category with its picture - click one to open it
+#   /coinscreen place topcoins     the richest players (head, flag, coins) - click to open the leaderboard
+#   /coinscreen place topshards    the same for Shards
+#   /coinscreen place mix          shop / top coins / top shards, one after another
+# Every setting below is the default - change one screen in game with /coinscreen.
+screens:
+  # small (2x2 maps), medium (3x2), big (3x3), huge (4x3)
+  default-size: big
+  # Rows shown (0 = as many as fit).
+  rows: 0
+  show-faces: true
+  show-flags: true
+  medals: true
+  stripes: true
+  # Clicking a row opens that category (or the leaderboard).
+  click-opens: true
+  titles:
+    shop: "COIN SHOP"
+    coins: "TOP COINS"
+    orbs: "TOP SHARDS"
+  colors:
+    shop: "#FFC23D"
+    coins: "#FFD24D"
+    orbs: "#C77DFF"
+  subtitle-shop: "Click a category to open it"
+  subtitle-top: "Click to open the leaderboard"
+  subtitle-cycle: "Click a row to open it"
+  footer: "Updates live"
+  # Right side of a category row: "%d items" (the number of things in it).
+  items-format: "%d items"
+  value-buy: "Buy"
+  value-top: "Top 10"
+  # Your own text for a category, e.g.  flags: "200+ flags"
+  values: {}
+  cycle:
+    seconds: 8
+    stats: [shop, coins, orbs]
+    dots:
+      current: "#55FF55"
+      other: ""
+    transition:
+      enabled: true
+      # page, slide, wipe, fade, flip, blinds, curtain, circle, random
+      effect: page
+      duration-ms: 700
+  # Picture behind the rows: none, gradient, stars, grid, trophies, waves, aurora, galaxy, sunset,
+  # ocean, lava, synthwave, matrix, circuit, hexagons, diamonds, confetti, sunburst, snow, sakura,
+  # bubbles, fireflies, checker, rain, ores, cave, portal, nether, end, blockwall, wool, obsidian,
+  # or image:<file.png> from plugins/Dreamcoinshop/backgrounds/.
+  backdrop: sunburst
+  cursor: true
+  hover-grow: true
+  view-range: 48
+  click-range: 10
+  # Faces on the top lists, from the player's skin. %uuid% / %name% are replaced.
+  head-skin-url: "https://mc-heads.net/skin/%uuid%"
+  head-cache-hours: 24
+
 # ─────────────────────────────── storage ───────────────────────────────
 # Where balances and unlocks are saved.
 #   SQLITE      - a file in this folder (data.db). For one server. Nothing to set up.

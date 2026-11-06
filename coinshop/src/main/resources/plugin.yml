@@ -22,6 +22,10 @@ commands:
   orbshop:
     description: Opens the Orbshop.
     usage: /orbshop
+  coinscreen:
+    description: Place and edit the coin shop screens on walls (the shop, top coins, top shards).
+    usage: /coinscreen <place|move|stat|backdrop|...>
+    aliases: [coinscreens]
 
 permissions:
   dreamcoinshop.use:
@@ -35,8 +39,12 @@ permissions:
     default: op
     children:
       dreamcoinshop.settings: true
+      dreamcoinshop.screen: true
   dreamcoinshop.settings:
     description: Change the plugin settings and prices from /coinshop -> Settings.
+    default: op
+  dreamcoinshop.screen:
+    description: /coinscreen - place and edit the coin shop screens on walls.
     default: op
   # Perk permissions: given to players who bought the perk. The perk commands (/craft,
   # /anvil, /nick ...) are built into DreamCoinshop; give a rank one of these to let it

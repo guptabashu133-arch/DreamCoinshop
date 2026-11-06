@@ -53,3 +53,7 @@ sounds:
 
   # Chest menu only (dialogs already click by themselves)
   gui-click:         { sound: "UI_BUTTON_CLICK",              volume: 0.4, pitch: 1.0 }
+
+  # Screens on walls (/coinscreen): aiming at a row, clicking one
+  screen-hover:      { sound: "BLOCK_NOTE_BLOCK_HAT",         volume: 0.25, pitch: 2.0 }
+  screen-click:      { sound: "UI_BUTTON_CLICK",              volume: 0.7, pitch: 1.0 }

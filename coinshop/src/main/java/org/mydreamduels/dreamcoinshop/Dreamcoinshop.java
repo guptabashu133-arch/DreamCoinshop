@@ -44,6 +44,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
     private Platform.Task orbTask;
     private int orbInterval = -1;
     private DreamLicense license;
+    private org.mydreamduels.dreamcoinshop.screen.ScreenHost screens;
 
     @Override
     public void onEnable() {
@@ -99,6 +100,15 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(perkCommands, this);
         perkCommands.register();
 
+        // the shop and the top lists on walls (/coinscreen)
+        screens = new org.mydreamduels.dreamcoinshop.screen.ScreenHost(this, new ScreenLink(this));
+        try {
+            screens.start();
+            command("coinscreen", screens.command(), "Place and edit the coin shop screens on walls", List.of("coinscreens"));
+        } catch (Throwable t) {
+            getLogger().warning("Coin shop screens could not start: " + t);
+        }
+
         startOrbTimer();
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             try {
@@ -123,6 +133,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
     public void onDisable() {
         if (config == null) return; // never started (broken config.yml)
         if (license != null) license.stop();
+        if (screens != null) screens.stop();
         if (orbTask != null) orbTask.cancel();
         if (sales != null) sales.stop();
         if (particles != null) particles.stopAll();
@@ -346,6 +357,15 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         data.topRefreshSeconds(cfg.topRefreshSeconds);
         if (old.topSize != cfg.topSize || old.topFullSize != cfg.topFullSize) data.invalidateTops();
         registerChat();
+        // the shop and the top lists on walls (/coinscreen)
+        screens = new org.mydreamduels.dreamcoinshop.screen.ScreenHost(this, new ScreenLink(this));
+        try {
+            screens.start();
+            command("coinscreen", screens.command(), "Place and edit the coin shop screens on walls", List.of("coinscreens"));
+        } catch (Throwable t) {
+            getLogger().warning("Coin shop screens could not start: " + t);
+        }
+
         startOrbTimer();
         if (old.particlesIntervalTicks != cfg.particlesIntervalTicks) particles.stopAll();
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -360,6 +380,7 @@ public class Dreamcoinshop extends JavaPlugin implements Listener {
         ShopConfig.Storage before = config.storage;
         menus.closeAll();
         if (!reloadSettings()) return -1;
+        if (screens != null) screens.reload();
         return before.equals(config.storage) ? 0 : 1;
     }
 
