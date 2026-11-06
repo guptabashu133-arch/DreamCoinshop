@@ -187,7 +187,8 @@ public final class CoinScreens implements Listener {
 
     /** stat is set before the first picture is drawn (Folia draws on another thread right away). */
     public BoardScreen create(String name, String world, Geometry g, BoardLayout.Size size, String stat) {
-        BoardScreen s = new BoardScreen(plugin, name, world, g, size, BoardLayout.DEFAULT_BACKGROUND, null);
+        int bg = Colors.rgb(plugin.getConfig().getString("screens.background", "#2A1A0E"));
+        BoardScreen s = new BoardScreen(plugin, name, world, g, size, bg >= 0 ? bg : BoardLayout.DEFAULT_BACKGROUND, null);
         s.stat = stat == null ? "cycle" : stat;
         screens.put(name.toLowerCase(Locale.ROOT), s);
         Tasks.global(() -> {

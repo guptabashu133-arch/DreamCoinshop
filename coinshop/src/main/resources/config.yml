@@ -386,6 +386,9 @@ screens:
   # bubbles, fireflies, checker, rain, ores, cave, portal, nether, end, blockwall, wool, obsidian,
   # or image:<file.png> from plugins/Dreamcoinshop/backgrounds/.
   backdrop: sunburst
+  # Base colour of new screens (the backdrop is drawn in its shades). Warm gold-brown by default;
+  # e.g. "#141824" night blue, "#1E1428" purple. Change one screen with /coinscreen background.
+  background: "#2A1A0E"
   cursor: true
   hover-grow: true
   view-range: 48
