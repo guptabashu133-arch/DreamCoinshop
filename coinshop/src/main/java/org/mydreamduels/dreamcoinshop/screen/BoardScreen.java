@@ -84,6 +84,9 @@ public final class BoardScreen {
     /** Shared picture (same for everyone), rebuilt every couple of seconds on the global thread. */
     private volatile byte[] base;
     private volatile int baseVersion;
+    /** Hovered pictures, shared by every viewer of the current base picture. */
+    private final Map<String, byte[]> hoverCache = new java.util.HashMap<>();
+    private int hoverCacheVersion = -1;
     private volatile List<BoardLayout.Row> rows = List.of();
     private volatile BoardLayout.Style style;
 
@@ -93,6 +96,8 @@ public final class BoardScreen {
         byte[] frame;
         int[] version, sent, drawn;
         MapCanvas[] canvas;
+        /** What the player's client has per cell (sending only what changed); null = unknown. */
+        byte[][] last;
         long lastClick;
     }
 
@@ -458,6 +463,7 @@ public final class BoardScreen {
             n.sent = new int[cells()];
             n.drawn = new int[cells()];
             n.canvas = new MapCanvas[cells()];
+            n.last = new byte[cells()][];
             Arrays.fill(n.version, 1);
             return n;
         });
@@ -483,8 +489,9 @@ public final class BoardScreen {
                 }
             } else if (st.builtBase != baseVersion || st.builtHover != hover || st.frame == null) {
                 st.builtTrans = -1;
-                byte[] nw = hover < 0 || sty == null ? b.clone()
-                        : BoardLayout.render(size, sty, rows, hover, hoverGrow(), backdropPixels()).pixels;
+                final BoardLayout.Style hs = sty;
+                byte[] nw = hover < 0 || sty == null ? b
+                        : hoverFrame(String.valueOf(hover), () -> BoardLayout.render(size, hs, rows, hover, hoverGrow(), backdropPixels()).pixels);
                 for (int c = 0; c < cells(); c++) {
                     if (st.frame == null || differs(st.frame, nw, c)) st.version[c]++;
                 }
@@ -507,7 +514,22 @@ public final class BoardScreen {
                 }
             }
         }
-        for (int c : send) p.sendMap(v[c]);
+        for (int c : send) {
+            // only the pixels that changed (a cursor step is a few pixels, not a whole map)
+            if (MapPackets.available()) {
+                byte[] now, before;
+                synchronized (st) {
+                    now = cellPixels(st, c);
+                    before = st.last[c];
+                    st.last[c] = now;
+                }
+                if (MapPackets.sendDiff(p, v[c].getId(), before, now)) continue;
+                synchronized (st) {
+                    st.last[c] = null;
+                }
+            }
+            p.sendMap(v[c]);
+        }
     }
 
     private boolean differs(byte[] a, byte[] b, int cell) {
@@ -551,33 +573,64 @@ public final class BoardScreen {
         return rows.get(row).id();
     }
 
+    /** The picture with a row hovered: drawn once per base picture, then shared. */
+    private byte[] hoverFrame(String key, java.util.function.Supplier<byte[]> draw) {
+        synchronized (hoverCache) {
+            if (hoverCacheVersion != baseVersion) {
+                hoverCache.clear();
+                hoverCacheVersion = baseVersion;
+            }
+            byte[] got = hoverCache.get(key);
+            if (got == null) {
+                got = draw.get();
+                if (hoverCache.size() < 64) hoverCache.put(key, got);
+            }
+            return got;
+        }
+    }
+
+    /** The picture of one cell for this viewer: their frame plus their cursor. */
+    private byte[] cellPixels(View st, int cell) {
+        byte[] out = new byte[128 * 128];
+        int W = size.width(), ox = (cell % geo.width()) * 128, oy = (cell / geo.width()) * 128;
+        for (int y = 0; y < 128; y++) System.arraycopy(st.frame, (oy + y) * W + ox, out, y * 128, 128);
+        if (st.cursorX >= 0) {
+            byte outline = Palette.of(0x000000), fill = Palette.of(st.hover >= 0 ? 0xFFFF55 : 0xFFFFFF);
+            int lx = st.cursorX - ox, ly = st.cursorY - oy;
+            for (int sy = 0; sy < CURSOR.length; sy++) {
+                int y = ly + sy;
+                if (y < 0 || y >= 128) continue;
+                String line = CURSOR[sy];
+                for (int sx = 0; sx < line.length(); sx++) {
+                    int x = lx + sx;
+                    if (x < 0 || x >= 128) continue;
+                    char ch = line.charAt(sx);
+                    if (ch == 'X') out[y * 128 + x] = outline;
+                    else if (ch == '.') out[y * 128 + x] = fill;
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The server asks for a cell (first look at the screen, or Player#sendMap). Once the client
+     * got the cell straight from us, the canvas is left alone - so the server doesn't send the
+     * same picture again every half second.
+     */
     @SuppressWarnings("deprecation")
     void renderCell(int cell, MapCanvas canvas, Player player) {
         View st = viewers.get(player.getUniqueId());
         if (st == null) return;
         synchronized (st) {
             if (st.frame == null || cell >= st.version.length) return;
+            if (st.last != null && st.last[cell] != null && MapPackets.available()) return;
             if (st.drawn[cell] == st.version[cell] && st.canvas[cell] == canvas) return;
             st.drawn[cell] = st.version[cell];
             st.canvas[cell] = canvas;
-            int W = size.width(), ox = (cell % geo.width()) * 128, oy = (cell / geo.width()) * 128;
-            byte outline = Palette.of(0x000000), fill = Palette.of(st.hover >= 0 ? 0xFFFF55 : 0xFFFFFF);
-            int lx = st.cursorX - ox, ly = st.cursorY - oy;
+            byte[] px = cellPixels(st, cell);
             for (int y = 0; y < 128; y++) {
-                int rowStart = (oy + y) * W + ox, sy = y - ly;
-                String line = st.cursorX >= 0 && sy >= 0 && sy < CURSOR.length ? CURSOR[sy] : null;
-                for (int x = 0; x < 128; x++) {
-                    byte b = st.frame[rowStart + x];
-                    if (line != null) {
-                        int sx = x - lx;
-                        if (sx >= 0 && sx < line.length()) {
-                            char ch = line.charAt(sx);
-                            if (ch == 'X') b = outline;
-                            else if (ch == '.') b = fill;
-                        }
-                    }
-                    canvas.setPixel(x, y, b);
-                }
+                for (int x = 0; x < 128; x++) canvas.setPixel(x, y, px[y * 128 + x]);
             }
         }
     }

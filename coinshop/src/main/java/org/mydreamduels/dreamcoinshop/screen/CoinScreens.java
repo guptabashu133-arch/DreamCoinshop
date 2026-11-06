@@ -442,4 +442,15 @@ public final class CoinScreens implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         for (BoardScreen s : screens.values()) s.forget(e.getPlayer().getUniqueId());
     }
+
+    /** A new world / a respawn: the client may have dropped its maps - send them whole again. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldChange(org.bukkit.event.player.PlayerChangedWorldEvent e) {
+        for (BoardScreen s : screens.values()) s.forget(e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRespawn(org.bukkit.event.player.PlayerRespawnEvent e) {
+        for (BoardScreen s : screens.values()) s.forget(e.getPlayer().getUniqueId());
+    }
 }
