@@ -98,6 +98,8 @@ public final class BoardScreen {
         MapCanvas[] canvas;
         /** What the player's client has per cell (sending only what changed); null = unknown. */
         byte[][] last;
+        /** When to send every cell whole once more (a safety net right after the screen appears). */
+        long fullAgain;
         long lastClick;
     }
 
@@ -464,11 +466,21 @@ public final class BoardScreen {
             n.drawn = new int[cells()];
             n.canvas = new MapCanvas[cells()];
             n.last = new byte[cells()][];
+            n.fullAgain = System.currentTimeMillis() + 2000;
             Arrays.fill(n.version, 1);
             return n;
         });
         List<Integer> send = new ArrayList<>(2);
         synchronized (st) {
+            // two seconds after the screen appears for this player: everything whole once more,
+            // then only changes - so a screen is always fully loaded before it gets updated bit by bit
+            if (st.fullAgain > 0 && System.currentTimeMillis() >= st.fullAgain) {
+                st.fullAgain = 0;
+                for (int c = 0; c < cells(); c++) {
+                    st.version[c]++;
+                    st.last[c] = null;
+                }
+            }
             Geometry.Hit hit = look(p, range);
             BoardLayout.Style sty = style;
             int step = transitionStep();
@@ -516,7 +528,7 @@ public final class BoardScreen {
         }
         for (int c : send) {
             // only the pixels that changed (a cursor step is a few pixels, not a whole map)
-            if (MapPackets.available()) {
+            if (MapPackets.available() && plugin.getConfig().getBoolean("screens.partial-updates", true)) {
                 byte[] now, before;
                 synchronized (st) {
                     now = cellPixels(st, c);
@@ -614,9 +626,9 @@ public final class BoardScreen {
     }
 
     /**
-     * The server asks for a cell (first look at the screen, or Player#sendMap). Once the client
-     * got the cell straight from us, the canvas is left alone - so the server doesn't send the
-     * same picture again every half second.
+     * The server asks for a cell (when a player starts seeing the screen, every half second for
+     * frames, or Player#sendMap). The canvas always gets the newest picture, so whatever the
+     * server sends is right - it only sends the pixels that changed in it.
      */
     @SuppressWarnings("deprecation")
     void renderCell(int cell, MapCanvas canvas, Player player) {
@@ -624,7 +636,6 @@ public final class BoardScreen {
         if (st == null) return;
         synchronized (st) {
             if (st.frame == null || cell >= st.version.length) return;
-            if (st.last != null && st.last[cell] != null && MapPackets.available()) return;
             if (st.drawn[cell] == st.version[cell] && st.canvas[cell] == canvas) return;
             st.drawn[cell] = st.version[cell];
             st.canvas[cell] = canvas;

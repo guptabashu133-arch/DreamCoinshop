@@ -82,9 +82,9 @@ public final class CoinScreens implements Listener {
             }
             if (changed) save();
         });
-        // numbers + frames every second, hover/cursor every 2 ticks for players right in front
+        // numbers + frames every second, hover/cursor every screens.update-ticks for players right in front
         slow = Tasks.globalTimer(this::slowTick, 20L, 20L);
-        fast = Tasks.globalTimer(this::fastTick, 5L, 2L);
+        fast = Tasks.globalTimer(this::fastTickGate, 5L, 1L);
     }
 
     public void reload() {
@@ -340,6 +340,14 @@ public final class CoinScreens implements Listener {
                 });
             }
         }
+    }
+
+    private int fastCounter;
+
+    /** Cursor / hover updates every screens.update-ticks ticks (1 = every tick, smoothest). */
+    private void fastTickGate() {
+        int every = Math.max(1, Math.min(10, plugin.getConfig().getInt("screens.update-ticks", 1)));
+        if (++fastCounter % every == 0) fastTick();
     }
 
     private void fastTick() {

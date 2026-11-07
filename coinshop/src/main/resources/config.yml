@@ -393,6 +393,12 @@ screens:
   hover-grow: true
   view-range: 48
   click-range: 10
+  # How often (ticks) the cursor and the hovered row follow a player standing in front of a
+  # screen. 1 = every tick (smoothest), 2 = every other tick (lighter for big servers).
+  update-ticks: 1
+  # Send only the part of a screen that changed (Paper / Folia / Purpur 1.20.5+) - much less
+  # network traffic, so screens stay smooth. false = always send whole maps (the old way).
+  partial-updates: true
   # Faces on the top lists, from the player's skin. %uuid% / %name% are replaced.
   head-skin-url: "https://mc-heads.net/skin/%uuid%"
   head-cache-hours: 24
