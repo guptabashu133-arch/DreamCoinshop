@@ -1,7 +1,7 @@
 # Paper, Purpur, Leaf and Folia load DreamCoinshop from this file; Spigot uses plugin.yml.
 # (A Paper plugin isn't rewritten by the server while it loads; commands are registered in code.)
 name: Dreamcoinshop
-version: '2.0.0'
+version: '2.1.0'
 main: org.mydreamduels.dreamcoinshop.Dreamcoinshop
 api-version: '1.20'
 folia-supported: true
